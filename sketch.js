@@ -6,6 +6,7 @@ let lastInteraction = 0;
 let backgroundHue = 220;
 let windForce = 0;
 let ambientSynth;
+let eraserMode = false;
 
 // Initialize Tone.js and setup ambient synth
 window.onload = () => {
@@ -53,6 +54,9 @@ window.generateExoticPlant = async function () {
       height: plantData.height,
       scale: plantData.scale,
       oscillator: plantData.oscillator,
+      layerCount: plantData.layerCount,
+      growthPattern: plantData.growthPattern,
+      depthOffset: plantData.depthOffset,
     };
 
     // Create a new plant with the exotic type
@@ -209,12 +213,28 @@ class Plant {
     this.soundScale = this.flowerData.scale;
     this.oscillatorType = this.flowerData.oscillator;
 
+    // New properties for enhanced visuals
+    this.layerCount = this.flowerData.layerCount || 1;
+    this.growthPattern = this.flowerData.growthPattern || "symmetrical";
+    this.depthOffset = this.flowerData.depthOffset || 0;
+
+    // Adjust size based on depth
+    this.depthScale = map(this.depthOffset, 0, 100, 1.5, 0.5);
+    this.size *= this.depthScale;
+    this.height *= this.depthScale;
+
+    // Adjusted y position for depth
+    this.y = y + this.depthOffset * 2;
+
+    // Enhanced animation properties
+    this.petalRotations = Array(this.layerCount).fill(0);
+    this.petalSpeeds = Array(this.layerCount)
+      .fill(0)
+      .map(() => random(-0.002, 0.002));
+    this.bloomPhases = Array(this.layerCount).fill(0);
+
     this.branches = [];
     this.createBranches();
-
-    // Animation properties
-    this.petalRotation = 0;
-    this.bloomPhase = 0;
   }
 
   // Methods for Plant class
@@ -231,6 +251,11 @@ class Plant {
     }
 
     this.oscillation += this.frequency;
+
+    // Update petal animations
+    this.petalRotations = this.petalRotations.map(
+      (rotation, i) => rotation + this.petalSpeeds[i] * (this.energy / 50)
+    );
   }
 
   interact() {
@@ -292,16 +317,70 @@ class Plant {
     }
   }
 
+  drawPetals(energyGlow) {
+    // Draw multiple layers of petals
+    for (let layer = 0; layer < this.layerCount; layer++) {
+      const layerSize = this.size * (1 - layer * 0.15);
+      const layerPetals = this.petals - layer * 2;
+
+      for (let i = 0; i < layerPetals; i++) {
+        let angle;
+        switch (this.growthPattern) {
+          case "spiral":
+            angle = (TWO_PI / layerPetals) * i + layer * 0.5;
+            break;
+          case "cascading":
+            angle =
+              (TWO_PI / layerPetals) * i + sin(this.oscillation + layer) * 0.3;
+            break;
+          case "random":
+            angle =
+              (TWO_PI / layerPetals) * i +
+              noise(i * 0.5, layer * 0.5, frameCount * 0.01) * PI;
+            break;
+          default: // symmetrical
+            angle = (TWO_PI / layerPetals) * i;
+        }
+
+        push();
+        rotate(angle + this.petalRotations[layer]);
+
+        // Add some wave motion to petals
+        let waveOffset = sin(this.oscillation + i * 0.5) * (this.energy * 0.05);
+
+        // Create more interesting petal shapes
+        beginShape();
+        let petalWidth = layerSize / 4;
+        let petalLength = layerSize / 2;
+        vertex(-petalWidth / 2, 0);
+        bezierVertex(
+          -petalWidth / 2,
+          -petalLength / 2,
+          0,
+          -petalLength + waveOffset,
+          petalWidth / 2,
+          -petalLength / 2
+        );
+        bezierVertex(petalWidth / 2, 0, petalWidth / 2, 0, 0, 0);
+        endShape(CLOSE);
+
+        pop();
+      }
+    }
+  }
+
   draw() {
     push();
     translate(this.x, this.y);
 
-    // Plant stem with wind effect
-    let sway = sin(this.oscillation) * (this.energy / 20) + windForce;
+    // Apply depth effects
+    let depthAlpha = map(this.depthOffset, 0, 100, 100, 60);
+    let sway =
+      sin(this.oscillation) * (this.energy / 20) + windForce * this.depthScale;
 
-    // Draw stem
-    stroke(120, 60, 40);
-    strokeWeight(map(this.height, 30, 150, 3, 8));
+    // Draw stem with enhanced thickness
+    stroke(120, 60, 40, depthAlpha);
+    strokeWeight(map(this.height, 30, 400, 3, 12) * this.depthScale);
     line(0, 0, sway * 8, -this.height);
 
     // Draw branches and leaves
@@ -312,6 +391,12 @@ class Plant {
     translate(sway * 8, -this.height);
 
     let energyGlow = map(this.energy, 0, this.maxEnergy, 0, 100);
+
+    // Add shadow for depth
+    noStroke();
+    fill(0, 0, 0, 20);
+    ellipse(5, 5, this.size * 0.8);
+
     fill(
       hue(this.color),
       saturation(this.color),
@@ -320,27 +405,36 @@ class Plant {
     );
     noStroke();
 
-    // Draw petals
-    for (let i = 0; i < this.petals; i++) {
-      let angle = (TWO_PI / this.petals) * i;
-      push();
-      rotate(angle + this.petalRotation);
-      ellipse(0, -this.size / 3, this.size / 4, this.size / 2);
-      pop();
+    // Draw enhanced petals
+    this.drawPetals(energyGlow);
+
+    // Draw center with more detail
+    let centerSize = this.size / 3;
+    fill(hue(this.color) + 20, 80, 80, energyGlow);
+    ellipse(0, 0, centerSize);
+
+    // Add center detail
+    fill(hue(this.color) + 40, 90, 90, energyGlow);
+    for (let i = 0; i < 12; i++) {
+      let angle = (TWO_PI / 12) * i;
+      let x = cos(angle) * centerSize * 0.2;
+      let y = sin(angle) * centerSize * 0.2;
+      ellipse(x, y, centerSize * 0.1);
     }
 
-    // Draw center
-    fill(hue(this.color) + 20, 80, 80, energyGlow);
-    ellipse(0, 0, this.size / 3);
     pop();
 
-    // Energy indicator
+    // Enhanced energy indicator
     if (this.energy > 10) {
       push();
       translate(0, -this.height - 30);
-      fill(60, 100, 100, this.energy * 2);
-      noStroke();
-      ellipse(0, 0, this.energy / 5);
+
+      // Add glow effect
+      for (let i = 3; i > 0; i--) {
+        fill(60, 100, 100, (this.energy * 2) / i);
+        ellipse(0, 0, (this.energy / 5) * i);
+      }
+
       pop();
     }
 
@@ -390,6 +484,11 @@ class Plant {
       const chord = chords[Math.floor(random(chords.length))];
       ambientSynth.triggerAttackRelease(chord, "2n");
     }
+  }
+
+  isMouseOver() {
+    let d = dist(mouseX, mouseY, this.x, this.y - this.height);
+    return d < this.size;
   }
 }
 
@@ -446,13 +545,23 @@ function initializeAudioAndPlants() {
   ambientSynth = new Tone.PolySynth(Tone.Synth).toDestination();
   ambientSynth.volume.value = -20;
 
-  // Create initial plants
+  // Create initial plants with depth
   const flowerTypes = Object.keys(FLOWER_TYPES);
-  for (let i = 0; i < 12; i++) {
-    let x = random(100, width - 100);
-    let y = height - 50;
-    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-    plants.push(new Plant(x, y, randomType));
+
+  // Create plants in layers for depth
+  for (let layer = 0; layer < 4; layer++) {
+    let plantsInLayer = map(layer, 0, 3, 6, 2); // More plants in front, fewer in back
+
+    for (let i = 0; i < plantsInLayer; i++) {
+      let x = random(50, width - 50);
+      let y = height - 50;
+      let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
+      let plant = new Plant(x, y, randomType);
+
+      // Add depth offset based on layer
+      plant.depthOffset = layer * 25; // 0-75 depth range
+      plants.push(plant);
+    }
   }
 }
 
@@ -476,6 +585,20 @@ function draw() {
     plant.draw();
   }
 
+  // Draw eraser mode indicator
+  if (eraserMode) {
+    push();
+    noFill();
+    stroke(0, 100, 100, 80);
+    strokeWeight(2);
+    let size = 30;
+    translate(mouseX, mouseY);
+    line(-size / 2, -size / 2, size / 2, size / 2);
+    line(-size / 2, size / 2, size / 2, -size / 2);
+    ellipse(0, 0, size, size);
+    pop();
+  }
+
   // Update background and wind
   backgroundHue = (backgroundHue + 0.1) % 360;
   windForce = sin(frameCount * 0.01) * 0.5;
@@ -487,13 +610,35 @@ function mousePressed() {
     Tone.start();
   }
 
-  // Add energy to nearby plants on click
-  for (let plant of plants) {
-    let d = dist(mouseX, mouseY, plant.x, plant.y);
-    if (d < 100) {
-      plant.energy = plant.maxEnergy;
-      plant.interact();
+  if (eraserMode) {
+    // Remove plant if clicking on it in eraser mode
+    for (let i = plants.length - 1; i >= 0; i--) {
+      if (plants[i].isMouseOver()) {
+        plants.splice(i, 1);
+        break;
+      }
     }
+  } else {
+    // Add energy to nearby plants on click (existing behavior)
+    for (let plant of plants) {
+      let d = dist(mouseX, mouseY, plant.x, plant.y);
+      if (d < 100) {
+        plant.energy = plant.maxEnergy;
+        plant.interact();
+      }
+    }
+  }
+}
+
+function keyPressed() {
+  if (key === "e" || key === "E") {
+    // Toggle eraser mode
+    eraserMode = !eraserMode;
+    document.body.style.cursor = eraserMode ? "crosshair" : "default";
+  } else if (key === "c" || key === "C") {
+    // Clear all plants
+    plants = [];
+    particles = [];
   }
 }
 
