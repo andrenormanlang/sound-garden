@@ -8,20 +8,33 @@ let windForce = 0;
 let ambientSynth;
 let eraserMode = false;
 
-// Initialize Tone.js and setup ambient synth
-window.onload = () => {
-  ambientSynth = new Tone.PolySynth({
-    voice: Tone.FMSynth,
-    options: {
-      envelope: {
-        attack: 0.5,
-        decay: 0.5,
-        sustain: 0.5,
-        release: 1,
-      },
+// Initialize audio context and setup ambient synth
+async function initializeAudio() {
+  // Start audio context
+  await Tone.start();
+  console.log("Audio context started");
+
+  // Create and configure ambient synth
+  ambientSynth = new Tone.PolySynth(Tone.FMSynth).toDestination();
+  ambientSynth.set({
+    envelope: {
+      attack: 0.5,
+      decay: 0.5,
+      sustain: 0.5,
+      release: 1,
     },
-  }).toDestination();
+  });
   ambientSynth.volume.value = -20;
+  console.log("Ambient synth initialized");
+}
+
+// Wait for the page to load before initializing
+window.onload = async () => {
+  try {
+    await initializeAudio();
+  } catch (error) {
+    console.error("Error initializing audio:", error);
+  }
 };
 
 // Make generateExoticPlant function globally accessible
@@ -258,15 +271,19 @@ class Plant {
     );
   }
 
-  interact() {
+  async interact() {
     if (millis() - this.lastSoundTime > 300) {
-      this.playSound();
-      this.createParticles();
-      this.lastSoundTime = millis();
+      try {
+        await this.playSound();
+        this.createParticles();
+        this.lastSoundTime = millis();
 
-      // Occasionally play ambient chord when plants are very active
-      if (this.energy > 80 && random() < 0.1) {
-        this.playAmbientChord();
+        // Occasionally play ambient chord when plants are very active
+        if (this.energy > 80 && random() < 0.1) {
+          await this.playAmbientChord();
+        }
+      } catch (error) {
+        console.error("Error in plant interaction:", error);
       }
     }
   }
@@ -453,24 +470,35 @@ class Plant {
     }
   }
 
-  playSound() {
-    if (!synths[this.flowerType]) {
-      synths[this.flowerType] = new Tone.PolySynth({
-        voice: Tone.Synth,
-        options: {
+  async playSound() {
+    try {
+      // Ensure Tone.js is running
+      if (Tone.context.state !== "running") {
+        await Tone.start();
+      }
+
+      // Initialize synth if it doesn't exist
+      if (!synths[this.flowerType]) {
+        synths[this.flowerType] = new Tone.PolySynth(
+          Tone.Synth
+        ).toDestination();
+        synths[this.flowerType].set({
           oscillator: { type: this.oscillatorType },
           envelope: { attack: 0.1, decay: 0.4, sustain: 0.1, release: 0.8 },
-        },
-      }).toDestination();
+        });
+      }
+
+      // Play the sound
+      let note =
+        this.soundScale[Math.floor(this.energy / 20) % this.soundScale.length];
+      let freq = Tone.Frequency(note, "midi").toFrequency();
+      let volume = map(this.energy, 0, this.maxEnergy, -35, -15);
+
+      synths[this.flowerType].volume.value = volume;
+      await synths[this.flowerType].triggerAttackRelease(freq, "8n");
+    } catch (error) {
+      console.error("Error playing sound:", error);
     }
-
-    let note =
-      this.soundScale[Math.floor(this.energy / 20) % this.soundScale.length];
-    let freq = Tone.Frequency(note, "midi").toFrequency();
-    let volume = map(this.energy, 0, this.maxEnergy, -35, -15);
-
-    synths[this.flowerType].volume.value = volume;
-    synths[this.flowerType].triggerAttackRelease(freq, "8n");
   }
 
   playAmbientChord() {
@@ -604,29 +632,35 @@ function draw() {
   windForce = sin(frameCount * 0.01) * 0.5;
 }
 
-function mousePressed() {
-  // Initialize audio context on first click
-  if (Tone.context.state !== "running") {
-    Tone.start();
-  }
+async function mousePressed() {
+  try {
+    // Initialize audio context on first click if not already running
+    if (Tone.context.state !== "running") {
+      await Tone.start();
+      console.log("Audio context started on user interaction");
+      await initializeAudio();
+    }
 
-  if (eraserMode) {
-    // Remove plant if clicking on it in eraser mode
-    for (let i = plants.length - 1; i >= 0; i--) {
-      if (plants[i].isMouseOver()) {
-        plants.splice(i, 1);
-        break;
+    if (eraserMode) {
+      // Remove plant if clicking on it in eraser mode
+      for (let i = plants.length - 1; i >= 0; i--) {
+        if (plants[i].isMouseOver()) {
+          plants.splice(i, 1);
+          break;
+        }
+      }
+    } else {
+      // Add energy to nearby plants on click
+      for (let plant of plants) {
+        let d = dist(mouseX, mouseY, plant.x, plant.y);
+        if (d < 100) {
+          plant.energy = plant.maxEnergy;
+          await plant.interact();
+        }
       }
     }
-  } else {
-    // Add energy to nearby plants on click (existing behavior)
-    for (let plant of plants) {
-      let d = dist(mouseX, mouseY, plant.x, plant.y);
-      if (d < 100) {
-        plant.energy = plant.maxEnergy;
-        plant.interact();
-      }
-    }
+  } catch (error) {
+    console.error("Error in mousePressed:", error);
   }
 }
 

@@ -12,8 +12,10 @@ const __dirname = dirname(__filename);
 
 const app = express();
 app.use(express.json());
-app.use(express.static(__dirname));
-app.use("/libraries", express.static(join(__dirname, "libraries")));
+app.use(express.static(join(__dirname, "../../public")));
+app.use("/js", express.static(join(__dirname, "../client/js")));
+app.use("/styles", express.static(join(__dirname, "../client/styles")));
+app.use("/assets", express.static(join(__dirname, "../client/assets")));
 
 // Initialize OpenAI
 const openai = new OpenAI({

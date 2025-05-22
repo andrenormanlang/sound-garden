@@ -1,9 +1,10 @@
 {
   "name": "interactive-sound-garden",
-  "module": "app.js",
+  "module": "src/server/app.js",
   "type": "module",
   "scripts": {
-    "start": "bun app.js"
+    "start": "bun src/server/app.js",
+    "dev": "bun --watch src/server/app.js"
   },
   "devDependencies": {
     "@types/bun": "latest"

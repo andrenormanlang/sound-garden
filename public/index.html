@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interactive Sound Garden</title>
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="/styles/style.css" />
   </head>
   <body>
     <div class="info-panel">
@@ -39,10 +39,13 @@
       <button class="btn" onclick="addRandomPlant()">Add Plant</button>
     </div>
 
+    <!-- Core libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.min.js"></script>
+    <script src="https://tonejs.github.io/build/Tone.js"></script>
     <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
-    <script src="config.js"></script>
-    <script src="sketch.js"></script>
+
+    <!-- Application code -->
+    <script src="/js/config.js"></script>
+    <script src="/js/sketch.js"></script>
   </body>
 </html>
