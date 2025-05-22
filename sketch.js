@@ -2,8 +2,6 @@
 let plants = [];
 let particles = [];
 let synths = {};
-let aiMode = false;
-let aiPatterns = [];
 let lastInteraction = 0;
 let backgroundHue = 220;
 let windForce = 0;
@@ -23,6 +21,62 @@ window.onload = () => {
     },
   }).toDestination();
   ambientSynth.volume.value = -20;
+};
+
+// Make generateExoticPlant function globally accessible
+window.generateExoticPlant = async function () {
+  // Ensure audio context is running
+  if (Tone.context.state !== "running") {
+    await Tone.start();
+  }
+
+  try {
+    const response = await fetch("/api/generate-plant", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate plant");
+    }
+
+    const plantData = await response.json();
+    const plantType = plantData.name.toLowerCase();
+
+    // Add the new flower type to FLOWER_TYPES
+    FLOWER_TYPES[plantType] = {
+      colors: plantData.colors.map((color) => color), // Copy the color array
+      petals: plantData.petals,
+      size: plantData.size,
+      height: plantData.height,
+      scale: plantData.scale,
+      oscillator: plantData.oscillator,
+    };
+
+    // Create a new plant with the exotic type
+    if (plants.length < 20) {
+      let x = random(100, width - 100);
+      let y = height - 50;
+      plants.push(new Plant(x, y, plantData.name.toLowerCase()));
+
+      // Update AI info panel with description
+      document.querySelector(".ai-info").innerHTML = `
+        <h4>🤖 AI Generated Plants</h4>
+        <p><strong>New Plant Generated:</strong> ${plantData.name}</p>
+        <p>${plantData.description}</p>
+      `;
+    } else {
+      alert("Garden is full! Remove some plants first.");
+    }
+
+    return plantData;
+  } catch (error) {
+    console.error("Error generating exotic plant:", error);
+    alert("Error generating plant. Please try again.");
+    return null;
+  }
 };
 
 // Flower definitions with unique characteristics
@@ -174,11 +228,6 @@ class Plant {
       this.interact();
     } else {
       this.energy *= 0.95; // Gradual decay
-    }
-
-    // AI behavior
-    if (aiMode && this.energy > 50) {
-      this.generateAIBehavior();
     }
 
     this.oscillation += this.frequency;
@@ -342,20 +391,6 @@ class Plant {
       ambientSynth.triggerAttackRelease(chord, "2n");
     }
   }
-
-  generateAIBehavior() {
-    if (random() < 0.1) {
-      let harmonicNote =
-        this.soundScale[Math.floor(random(this.soundScale.length))];
-      let harmony = new Tone.Oscillator(
-        Tone.Frequency(harmonicNote, "midi").toFrequency(),
-        "triangle"
-      );
-      harmony.toDestination();
-      harmony.start();
-      harmony.stop("+0.5");
-    }
-  }
 }
 
 // Particle class for visual effects
@@ -462,11 +497,15 @@ function mousePressed() {
   }
 }
 
-function toggleAI() {
-  aiMode = !aiMode;
-  document.getElementById("ai-status").textContent = `AI Mode: ${
-    aiMode ? "ON" : "OFF"
-  }`;
+// Simplify addRandomPlant function
+function addRandomPlant() {
+  if (plants.length < 20) {
+    const flowerTypes = Object.keys(FLOWER_TYPES);
+    let x = random(100, width - 100);
+    let y = height - 50;
+    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
+    plants.push(new Plant(x, y, randomType));
+  }
 }
 
 function resetGarden() {
@@ -475,16 +514,6 @@ function resetGarden() {
 
   const flowerTypes = Object.keys(FLOWER_TYPES);
   for (let i = 0; i < 12; i++) {
-    let x = random(100, width - 100);
-    let y = height - 50;
-    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-    plants.push(new Plant(x, y, randomType));
-  }
-}
-
-function addRandomPlant() {
-  if (plants.length < 20) {
-    const flowerTypes = Object.keys(FLOWER_TYPES);
     let x = random(100, width - 100);
     let y = height - 50;
     let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];

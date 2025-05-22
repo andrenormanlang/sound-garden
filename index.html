@@ -22,21 +22,17 @@
       <ul>
         <li>Mouse: Interact with flowers</li>
         <li>Click: Energize flowers</li>
-        <li>Space: Toggle AI mode</li>
+        <li>AI Plant: Generate unique flowers using AI</li>
       </ul>
     </div>
 
     <div class="ai-info">
-      <h4>🤖 AI Features</h4>
-      <p id="ai-status">AI Mode: OFF</p>
-      <p>
-        AI generates new plant behaviors and sound patterns based on your
-        interactions.
-      </p>
+      <h4>🤖 AI Generated Plants</h4>
+      <p>Click the AI Plant button to generate unique exotic flowers!</p>
     </div>
 
     <div class="controls">
-      <button class="btn" onclick="toggleAI()">Toggle AI Mode</button>
+      <button class="btn" onclick="generateExoticPlant()">AI Plant</button>
       <button class="btn" onclick="resetGarden()">Reset Garden</button>
       <button class="btn" onclick="addRandomPlant()">Add Plant</button>
     </div>
@@ -44,6 +40,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.min.js"></script>
     <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+    <script src="config.js"></script>
     <script src="sketch.js"></script>
   </body>
 </html>
