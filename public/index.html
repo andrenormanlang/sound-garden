@@ -5,6 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interactive Sound Garden</title>
     <link rel="stylesheet" type="text/css" href="/styles/style.css" />
+    <style>
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        cursor: pointer;
+      }
+      .overlay-content {
+        color: white;
+        text-align: center;
+        padding: 20px;
+      }
+      .overlay-content h2 {
+        font-size: 24px;
+        margin-bottom: 16px;
+      }
+      .start-button {
+        padding: 15px 30px;
+        font-size: 18px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .start-button:hover {
+        background: #45a049;
+      }
+    </style>
   </head>
   <body>
     <div class="info-panel">
@@ -39,13 +76,59 @@
       <button class="btn" onclick="addRandomPlant()">Add Plant</button>
     </div>
 
+    <div
+      id="startOverlay"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      "
+    >
+      <button
+        id="startButton"
+        style="padding: 20px; font-size: 24px; cursor: pointer"
+      >
+        Click to Start Garden 🌸
+      </button>
+    </div>
+
     <!-- Core libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-    <script src="https://tonejs.github.io/build/Tone.js"></script>
+    <script src="/assets/libs/p5.min.js"></script>
+    <script src="/assets/libs/p5.sound.min.js"></script>
     <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
 
-    <!-- Application code -->
+    <!-- Application code - order matters! -->
     <script src="/js/config.js"></script>
     <script src="/js/sketch.js"></script>
+
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        console.log("Document loaded, waiting for user interaction");
+
+        const startButton = document.getElementById("startButton");
+        const overlay = document.getElementById("startOverlay");
+
+        startButton.addEventListener("click", async () => {
+          // Start audio context
+          await userStartAudio();
+
+          // Remove overlay
+          overlay.style.display = "none";
+
+          // Initialize the garden
+          if (typeof window.initializeGarden === "function") {
+            window.initializeGarden();
+          }
+        });
+      });
+    </script>
   </body>
 </html>
