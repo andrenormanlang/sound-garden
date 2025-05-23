@@ -3,7 +3,7 @@
   "module": "src/server/app.js",
   "type": "module",
   "scripts": {
-    "start": "bun src/server/app.js",
+    "start": "bun --watch src/server/app.js",
     "dev": "bun --watch src/server/app.js"
   },
   "devDependencies": {

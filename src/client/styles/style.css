@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -23,15 +24,24 @@ canvas {
 }
 
 .ai-info {
-  position: absolute;
+  position: fixed;  /* Changed from absolute to fixed */
   top: 20px;
   right: 20px;
   color: white;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);  /* Slightly darker background */
   padding: 15px;
   border-radius: 10px;
-  z-index: 100;
-  max-width: 250px;
+  z-index: 1000;  /* Increased z-index to ensure it's always on top */
+  max-width: 300px;  /* Slightly wider */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);  /* Added shadow for better visibility */
+  border: 1px solid rgba(255, 255, 255, 0.1);  /* Subtle border */
+  backdrop-filter: blur(5px);  /* Added blur effect for modern look */
+  font-size: 14px;
+}
+
+.ai-info h4 {
+  margin: 0 0 10px 0;
+  color: #ffd700;
 }
 
 .controls {
@@ -54,4 +64,15 @@ canvas {
 
 .btn:hover {
   background: rgba(100, 200, 100, 1);
+}
+
+.plant-info {
+  margin-bottom: 15px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.plant-info p {
+  margin: 5px 0;
 }

@@ -10,34 +10,61 @@
     <div class="info-panel">
       <h3>🌸 Interactive Flower Garden</h3>
       <p>
-        Explore a diverse garden with 15+ flower types! Each flower has unique
-        shapes, colors, and musical scales.
+        Explore a diverse garden with different flower types! Each flower has
+        unique shapes, colors, and musical scales.
       </p>
-      <p>
-        <strong>Flowers include:</strong><br />
-        🌹 Rose, 🌷 Tulip, 🌻 Daisy, 🌺 Orchid, 🪷 Lotus, 🌼 Dandelion, 🌿
-        Lavender & more!
-      </p>
+      <p>🌹 Rose, 🌷 Tulip, 🌻 Daisy, 🌺 Orchid, 🪷 Lotus, 🌼 Dandelion, 🌿</p>
       <p><strong>Controls:</strong></p>
       <ul>
-        <li>Mouse: Interact with flowers</li>
-        <li>Click: Energize flowers</li>
+        <li>Hover Mouse: Interact with flowers and play sound</li>
         <li>Press 'E': Toggle eraser mode</li>
         <li>Press 'C': Clear entire garden</li>
-        <li>AI Plant: Generate unique flowers using AI</li>
+        <li>AI Plant: Generate unique flowers using AI 🤖</li>
       </ul>
-    </div>
-
-    <div class="ai-info">
-      <h4>🤖 AI Generated Plants</h4>
-      <p>Click the AI Plant button to generate unique exotic flowers!</p>
+      <div class="ai-info"></div>
     </div>
 
     <div class="controls">
       <button class="btn" onclick="generateExoticPlant()">AI Plant</button>
+      <button class="btn" onclick="generateMultiplePlants(50)">
+        Add 50 Plants
+      </button>
+      <button class="btn" onclick="generateMultiplePlants(100)">
+        Add 100 Plants
+      </button>
       <button class="btn" onclick="resetGarden()">Reset Garden</button>
-      <button class="btn" onclick="addRandomPlant()">Add Plant</button>
+      <button class="btn" onclick="addRandomPlant()">Add Single Plant</button>
     </div>
+
+    <script>
+      async function generateMultiplePlants(quantity) {
+        try {
+          // Create basic plants without waiting for AI generation
+          for (let i = 0; i < quantity; i++) {
+            addRandomPlant();
+          }
+
+          // Also request AI-generated plants in the background if you want
+          const response = await fetch("/api/generate-plant", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ quantity: quantity }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to generate plants");
+          }
+
+          const result = await response.json();
+          console.log(`Generated ${result.total} plants`);
+        } catch (error) {
+          console.error("Error generating multiple plants:", error);
+          alert("Error generating plants. Please try again.");
+        }
+      }
+    </script>
 
     <!-- Core libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>

@@ -56,39 +56,86 @@ window.generateExoticPlant = async function () {
       throw new Error("Failed to generate plant");
     }
 
-    const plantData = await response.json();
-    const plantType = plantData.name.toLowerCase();
+    const responseData = await response.json();
+    // If it's a single plant response
+    const plantsToAdd = responseData.plants || [responseData];
 
-    // Add the new flower type to FLOWER_TYPES
-    FLOWER_TYPES[plantType] = {
-      colors: plantData.colors.map((color) => color), // Copy the color array
-      petals: plantData.petals,
-      size: plantData.size,
-      height: plantData.height,
-      scale: plantData.scale,
-      oscillator: plantData.oscillator,
-      layerCount: plantData.layerCount,
-      growthPattern: plantData.growthPattern,
-      depthOffset: plantData.depthOffset,
-    };
+    // Track successfully added plants for the info panel
+    let addedPlants = [];
 
-    // Create a new plant with the exotic type
-    if (plants.length < 20) {
-      let x = random(100, width - 100);
-      let y = height - 50;
-      plants.push(new Plant(x, y, plantData.name.toLowerCase()));
+    // Process each plant in the response
+    plantsToAdd.forEach((plantData) => {
+      if (!plantData || !plantData.name) {
+        console.error("Invalid plant data received:", plantData);
+        return;
+      }
 
-      // Update AI info panel with description
-      document.querySelector(".ai-info").innerHTML = `
-        <h4>🤖 AI Generated Plants</h4>
-        <p><strong>New Plant Generated:</strong> ${plantData.name}</p>
-        <p>${plantData.description}</p>
-      `;
-    } else {
+      const plantType = plantData.name.toLowerCase();
+
+      // Add the new flower type to FLOWER_TYPES
+      FLOWER_TYPES[plantType] = {
+        colors: plantData.colors.map((color) => color), // Copy the color array
+        petals: plantData.petals,
+        size: plantData.size,
+        height: plantData.height,
+        scale: plantData.scale,
+        oscillator: plantData.oscillator,
+        layerCount: plantData.layerCount,
+        growthPattern: plantData.growthPattern,
+        depthOffset: plantData.depthOffset,
+        stemStyle: plantData.stemStyle,
+        stemRadius: plantData.stemRadius,
+        petalShape: plantData.petalShape,
+        leafPattern: plantData.leafPattern,
+        flowerType: plantData.flowerType,
+        seasonalBehavior: plantData.seasonalBehavior,
+        pollinatorAttractant: plantData.pollinatorAttractant,
+      };
+
+      // Try to add the plant if there's room
+      if (plants.length < 1000) {
+        // Calculate position in a grid-like pattern to avoid overcrowding
+        const gridSize = Math.floor(Math.sqrt(1000)); // For a nice square layout
+        const cellWidth = (width - 200) / gridSize;
+        const cellHeight = (height - 100) / (1000 / gridSize);
+
+        // Calculate position based on current plant count
+        const row = Math.floor(plants.length / gridSize);
+        const col = plants.length % gridSize;
+
+        let x = 100 + col * cellWidth + random(-cellWidth / 4, cellWidth / 4);
+        let y =
+          height -
+          50 -
+          row * (cellHeight / 2) +
+          random(-cellHeight / 4, cellHeight / 4);
+
+        plants.push(new Plant(x, y, plantData.name.toLowerCase()));
+        addedPlants.push(plantData);
+      }
+    });
+
+    if (addedPlants.length === 0) {
       alert("Garden is full! Remove some plants first.");
+    } else {
+      // Update AI info panel with descriptions of added plants
+      const infoHTML = `
+        <h4>🤖 AI Generated Plants</h4>
+        ${addedPlants
+          .map(
+            (plant) => `
+          <div class="plant-info">
+            <p><strong>New Plant Generated:</strong> ${plant.name}</p>
+            <p>${plant.description}</p>
+          </div>
+        `
+          )
+          .join("")}
+      `;
+      document.querySelector(".ai-info").innerHTML = infoHTML;
     }
 
-    return plantData;
+    return plantsToAdd[0]; // Return the first plant for backwards compatibility
   } catch (error) {
     console.error("Error generating exotic plant:", error);
     alert("Error generating plant. Please try again.");
@@ -191,6 +238,118 @@ const FLOWER_TYPES = {
     height: [50, 90],
     scale: [60, 62, 65, 67, 70], // Pentatonic
     oscillator: "sawtooth",
+  },
+  // Houseplants
+  rubber_plant: {
+    colors: [
+      [120, 60, 40], // Dark green leaves
+    ],
+    petals: 8,
+    size: [60, 90],
+    height: [120, 200],
+    scale: [48, 52, 55, 59], // Lower register for a deep, grounding sound
+    oscillator: "sine",
+    layerCount: 1,
+    growthPattern: "symmetrical",
+    leafPattern: "alternate",
+  },
+  creeping_fig: {
+    colors: [
+      [100, 70, 60], // Bright green
+      [90, 65, 55],
+    ],
+    petals: 12,
+    size: [40, 60],
+    height: [30, 60],
+    scale: [60, 64, 67, 71], // Light, airy melody
+    oscillator: "triangle",
+    layerCount: 2,
+    growthPattern: "cascading",
+    leafPattern: "alternate",
+  },
+  dracaena: {
+    colors: [
+      [120, 40, 50], // Deep green
+      [120, 30, 60],
+    ],
+    petals: 15,
+    size: [50, 80],
+    height: [100, 180],
+    scale: [55, 59, 62, 67], // Mid-range mysterious sound
+    oscillator: "triangle",
+    layerCount: 1,
+    growthPattern: "spiral",
+    leafPattern: "whorled",
+  },
+  peace_lily: {
+    colors: [
+      [120, 30, 85], // Green leaves
+      [0, 0, 100], // White flowers
+    ],
+    petals: 1,
+    size: [30, 50],
+    height: [40, 80],
+    scale: [72, 76, 79, 83], // High, peaceful notes
+    oscillator: "sine",
+    layerCount: 1,
+    growthPattern: "symmetrical",
+    leafPattern: "basal",
+  },
+  snake_plant: {
+    colors: [
+      [120, 50, 60], // Green with
+      [120, 70, 40], // pattern variations
+    ],
+    petals: 6,
+    size: [40, 70],
+    height: [60, 120],
+    scale: [48, 55, 60, 67], // Strong bass notes
+    oscillator: "sawtooth",
+    layerCount: 1,
+    growthPattern: "symmetrical",
+    leafPattern: "basal",
+  },
+  boston_fern: {
+    colors: [
+      [100, 60, 70], // Bright green
+      [120, 50, 60],
+    ],
+    petals: 20,
+    size: [70, 100],
+    height: [50, 90],
+    scale: [64, 67, 71, 74], // Gentle mid-range
+    oscillator: "triangle",
+    layerCount: 3,
+    growthPattern: "cascading",
+    leafPattern: "opposite",
+  },
+  spider_plant: {
+    colors: [
+      [90, 30, 90], // Light green
+      [120, 20, 95],
+    ],
+    petals: 15,
+    size: [50, 80],
+    height: [30, 60],
+    scale: [69, 72, 76, 79], // High, tinkling notes
+    oscillator: "sine",
+    layerCount: 2,
+    growthPattern: "cascading",
+    leafPattern: "basal",
+  },
+  aloe_vera: {
+    colors: [
+      [120, 40, 70], // Pale green
+      [120, 50, 60],
+    ],
+    petals: 8,
+    size: [40, 60],
+    height: [30, 50],
+    scale: [60, 64, 67, 71], // Healing frequencies
+    oscillator: "triangle",
+    layerCount: 1,
+    growthPattern: "symmetrical",
+    leafPattern: "basal",
   },
 };
 
@@ -561,8 +720,24 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   colorMode(HSB, 360, 100, 100, 100);
 
-  // Initialize plants after first user interaction
-  document.addEventListener("click", initializeAudioAndPlants, { once: true });
+  // Show a message to click anywhere to start
+  textAlign(CENTER, CENTER);
+  textSize(24);
+  fill(0);
+  text("Click anywhere to start the garden", width / 2, height / 2);
+
+  // Initialize audio and plants only after first user interaction
+  const startInteraction = async () => {
+    await Tone.start();
+    await initializeAudio();
+    initializeAudioAndPlants();
+    // Remove the event listeners once initialized
+    document.removeEventListener("click", startInteraction);
+    document.removeEventListener("touchstart", startInteraction);
+  };
+
+  document.addEventListener("click", startInteraction);
+  document.addEventListener("touchstart", startInteraction);
 }
 
 function initializeAudioAndPlants() {
@@ -678,10 +853,22 @@ function keyPressed() {
 
 // Simplify addRandomPlant function
 function addRandomPlant() {
-  if (plants.length < 20) {
+  if (plants.length < 1000) {
     const flowerTypes = Object.keys(FLOWER_TYPES);
-    let x = random(100, width - 100);
-    let y = height - 50;
+    const gridSize = Math.floor(Math.sqrt(1000));
+    const cellWidth = (width - 200) / gridSize;
+    const cellHeight = (height - 100) / (1000 / gridSize);
+
+    const row = Math.floor(plants.length / gridSize);
+    const col = plants.length % gridSize;
+
+    let x = 100 + col * cellWidth + random(-cellWidth / 4, cellWidth / 4);
+    let y =
+      height -
+      50 -
+      row * (cellHeight / 2) +
+      random(-cellHeight / 4, cellHeight / 4);
+
     let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
     plants.push(new Plant(x, y, randomType));
   }
@@ -692,11 +879,21 @@ function resetGarden() {
   particles = [];
 
   const flowerTypes = Object.keys(FLOWER_TYPES);
-  for (let i = 0; i < 12; i++) {
-    let x = random(100, width - 100);
-    let y = height - 50;
-    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-    plants.push(new Plant(x, y, randomType));
+
+  // Create plants in layers for depth (same as initial setup)
+  for (let layer = 0; layer < 4; layer++) {
+    let plantsInLayer = map(layer, 0, 3, 6, 2); // More plants in front, fewer in back
+
+    for (let i = 0; i < plantsInLayer; i++) {
+      let x = random(50, width - 50);
+      let y = height - 50;
+      let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
+      let plant = new Plant(x, y, randomType);
+
+      // Add depth offset based on layer
+      plant.depthOffset = layer * 25; // 0-75 depth range
+      plants.push(plant);
+    }
   }
 }
 
