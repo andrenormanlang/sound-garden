@@ -88,17 +88,17 @@ app.post("/api/generate-plant", async (req, res) => {
 - Daisy-like flowers (asters, daisies)
 - Ground-level flowers (petunias, pansies)
 
-Respond with ONLY a valid JSON object in this exact format:
+Respond with ONLY a valid JSON object with numerical arrays properly formatted (no string arrays). Example format:
 {
-  "name": "string (Garden-inspired flower name)",
-  "description": "string (Brief, evocative description)",
-  "colors": [[hue (0-360), saturation (0-100), brightness (0-100)], [hue, sat, bri]], 
-  "petals": "number (5-30, realistic for garden flowers)",
-  "size": "[min_flower_head_size (10-80), max_flower_head_size (20-100)]",
-  "height": "[min_stem_height (20-150), max_stem_height (50-250)]",
-  "scale": "[array of 3-7 MIDI note numbers for a pleasant melody]",
-  "oscillator": "string ('sine'|'triangle' for delicate flowers, 'square'|'sawtooth' for bold flowers)",
-  "layerCount": "number (1-4, for petal layers like in roses or carnations)",
+  "name": "Sunset Lily",
+  "description": "A towering flower with rainbow-hued petals that shimmer in the breeze",
+  "colors": [[320, 80, 90], [45, 85, 95], [200, 70, 85]], // 1-5 color arrays, each with exactly 3 numbers
+  "petals": 25, // Single number between 5-40
+  "size": [30, 150], // Example format: exactly two numbers for [min, max] size
+  "height": [50, 300], // Example format: exactly two numbers for [min, max] height
+  "scale": [60, 64, 67, 72], // Example format: array of 4-7 MIDI numbers between 48-84
+  "oscillator": "sine", // Must be exactly "sine", "triangle", "square", or "sawtooth"
+  "layerCount": 2, // Single number between 1-4
   "growthPattern": "string ('spiral'|'symmetrical'|'cascading'|'random')",
   "depthOffset": "number (0-100, for 3D placement variety)",
   "stemStyle": "string ('straight'|'curved'|'segmented'|'straight_bushy')",
@@ -113,7 +113,7 @@ Respond with ONLY a valid JSON object in this exact format:
                 {
                   role: "user",
                   content:
-                    "Generate a garden flower with natural proportions and appearance. Make it musically harmonious with a scale array containing 4-7 MIDI note numbers between 48 and 84.",
+                    "Generate a large, spectacular garden flower. Requirements: 1) Include 3-5 different colors in your design, 2) Use large sizes (size array between [30-150]), 3) Make it tall (height array between [50-300]), 4) Include 4-7 MIDI notes between 48-84 in the scale array, 5) Make sure all number arrays are properly formatted as JSON arrays, not strings.",
                 },
               ],
               temperature: 0.8,
@@ -204,12 +204,13 @@ function validatePlantData(plantData) {
     "colors",
     "array",
     (v) =>
-      v.length > 0 &&
+      v.length >= 1 &&
+      v.length <= 5 && // Allow up to 5 colors
       v.every((color) => Array.isArray(color) && color.length === 3)
   );
-  check("petals", "number", (v) => v >= 1 && v <= 30); // Allow fewer petals for some plant types
-  check("size", "array", (v) => v.length === 2 && v[1] <= 100);
-  check("height", "array", (v) => v.length === 2 && v[1] <= 250);
+  check("petals", "number", (v) => v >= 1 && v <= 40); // Allow more petals
+  check("size", "array", (v) => v.length === 2 && v[1] <= 150); // Allow bigger flowers
+  check("height", "array", (v) => v.length === 2 && v[1] <= 300); // Allow taller plants
   check(
     "scale",
     "array",

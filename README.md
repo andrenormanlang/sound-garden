@@ -4,14 +4,14 @@ An interactive digital garden that combines visual art, procedural animation, an
 
 ## Features
 
-- **Dynamic Flower Types**: Multiple flower varieties including:
+- **Some Dynamic Flower Types**:
   - 🌹 Roses (Harmonic major scales)
   - 🌷 Tulips (Natural minor scales)
   - 🌻 Daisies (Major triads)
   - 🌺 Orchids (Diminished scales)
   - 🪷 Lotus (Low register harmonics)
   - 🌼 Dandelion (Major scales)
-  - 🌿 And more!
+
 
 - **Interactive Elements**:
   - Mouse proximity affects flower energy
@@ -27,8 +27,7 @@ An interactive digital garden that combines visual art, procedural animation, an
   - Different synthesizer types per flower
 
 - **AI Features**:
-  - Toggle AI mode to enable autonomous behavior
-  - AI generates new plant behaviors
+  - AI generates new plant
   - Dynamic sound pattern generation
   - Responsive to user interaction patterns
 
