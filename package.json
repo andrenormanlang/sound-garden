@@ -1,23 +1,28 @@
 {
-  "name": "interactive-sound-garden",
-  "module": "src/server/app.js",
+  "name": "sound-garden",
+  "module": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "bun --watch src/server/app.js",
-    "dev": "bun --watch src/server/app.js"
+    "start": "bun src/server/app.js",
+    "dev": "bun --watch src/server/app.js",
+    "build": "copyfiles -u 2 \"src/client/js/**/*\" \"src/client/styles/**/*\" \"src/client/assets/**/*\" public",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "copyfiles": "^2.4.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "ml5": "^1.2.1",
     "openai": "^4.102.0",
     "p5": "^2.0.2",
-    "tone": "^15.1.22"
+    "tone": "^15.1.22",
+    "serverless-http": "^3.2.0"
   }
 }

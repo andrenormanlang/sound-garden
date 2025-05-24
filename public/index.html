@@ -8,32 +8,57 @@
   </head>
   <body>
     <div class="info-panel">
-      <h3>🌸 Interactive Flower Garden</h3>
-      <p>
+      <h3>🌸🌹 🌷 🌻 🌺 🪷 🌼 🌿</h3>
+      <!-- <p>
         Explore a diverse garden with different flower types! Each flower has
         unique shapes, colors, and musical scales.
-      </p>
-      <p>🌹 Rose, 🌷 Tulip, 🌻 Daisy, 🌺 Orchid, 🪷 Lotus, 🌼 Dandelion, 🌿</p>
-      <p><strong>Controls:</strong></p>
+      </p> -->
+      <!-- <p>🌹 Rose, 🌷 Tulip, 🌻 Daisy, 🌺 Orchid, 🪷 Lotus, 🌼 Dandelion, 🌿</p> -->
+      <p><strong>Garden Controls:</strong></p>
       <ul>
-        <li>Hover Mouse: Interact with flowers and play sound</li>
-        <li>Press 'E': Toggle eraser mode</li>
+        <li>Mouse: Hover and click to interact with plants (default)</li>
+        <li>
+          Press '2': Toggle Random Plant Creator (crosshair to place flowers)
+        </li>
+        <li>
+          Press '3': Toggle AI Plant Creator (crosshair to place AI flowers) 🤖
+        </li>
+        <li>Press 'E': Toggle Eraser (crosshair to remove plants)</li>
         <li>Press 'C': Clear entire garden</li>
-        <li>AI Plant: Generate unique flowers using AI 🤖</li>
+        <li>Press 'M': Toggle sound on/off 🔊</li>
       </ul>
       <div class="ai-info"></div>
+      <div class="weather-info"></div>
     </div>
 
     <div class="controls">
-      <button class="btn" onclick="generateExoticPlant()">AI Plant</button>
-      <button class="btn" onclick="generateMultiplePlants(50)">
-        Add 50 Plants
+      <button class="btn sound-toggle-btn" onclick="toggleSound()">
+        <span class="sound-icon">🔊</span>
+        <span class="sound-text">Sound On</span>
+      </button>
+      <button class="btn weather-btn" onclick="generateWeatherEvent()">
+        <div class="spinner"></div>
+        <span>Change Weather</span>
+      </button>
+      <button class="btn" onclick="generateExoticPlant()">
+        <div class="spinner"></div>
+        <span>AI Plant</span>
+      </button>
+      <button class="btn" onclick="generatePsychedelicRainbow()">
+        <div class="spinner"></div>
+        <span>AI Rainbow</span>
+      </button>
+      <!-- <button class="btn" onclick="generateMultiplePlants(50)">
+        <div class="spinner"></div>
+        <span>Add 50 Plants</span>
       </button>
       <button class="btn" onclick="generateMultiplePlants(100)">
-        Add 100 Plants
+        <div class="spinner"></div>
+        <span>Add 100 Plants</span>
+      </button> -->
+      <button class="btn" onclick="resetGarden()">
+        <span>Reset Garden</span>
       </button>
-      <button class="btn" onclick="resetGarden()">Reset Garden</button>
-      <button class="btn" onclick="addRandomPlant()">Add Single Plant</button>
     </div>
 
     <script>

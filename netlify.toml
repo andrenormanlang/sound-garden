@@ -1,0 +1,18 @@
+[build]
+  command = "bun run build"
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild" # For efficient bundling of your serverless functions
+  external_node_modules = ["serverless-http"] # Don’t bundle this dependency to avoid resolution errors
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat" # Routes API requests to your serverless function
+  status = 200 # Important for function rewrites
+
+[[redirects]] # SPA fallback for your frontend
+  from = "/*"
+  to = "/index.html"
+  status = 200

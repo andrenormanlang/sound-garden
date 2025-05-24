@@ -1,83 +1,140 @@
 # Interactive Sound Garden 🌸
 
-An interactive digital garden that combines visual art, procedural animation, and generative sound. Each flower in the garden responds to user interaction with unique visual effects and musical patterns.
+An interactive digital garden that combines visual art, procedural animation, and generative sound.
 
 ## Features
 
-- **Some Dynamic Flower Types**:
-  - 🌹 Roses (Harmonic major scales)
-  - 🌷 Tulips (Natural minor scales)
-  - 🌻 Daisies (Major triads)
-  - 🌺 Orchids (Diminished scales)
-  - 🪷 Lotus (Low register harmonics)
-  - 🌼 Dandelion (Major scales)
-
+- **AI-Generated Plants**:
+  - Unique visual characteristics for each plant
+  - Procedurally generated shapes and colors
+  - Various growth patterns and behaviors
+  - Dynamic stem and petal configurations
 
 - **Interactive Elements**:
-  - Mouse proximity affects flower energy
-  - Click to energize flowers
-  - Each flower type has unique sound patterns
-  - Particle effects on interaction
-  - Wind simulation affecting plant movement
+  - Mouse proximity affects plant behavior
+  - Click interaction with individual plants
+  - Each plant has unique sound patterns
+  - Real-time sound synthesis
+  - Dynamic visual responses
 
 - **Generative Sound**:
-  - Each flower type has its own musical scale
-  - Ambient chord progressions
-  - Dynamic volume based on interaction intensity
-  - Different synthesizer types per flower
+  - Unique musical scales per plant
+  - Multiple oscillator types
+  - Dynamic audio parameters
+  - Responsive sound design
+  - Layered sound composition
 
-- **AI Features**:
-  - AI generates new plant
-  - Dynamic sound pattern generation
-  - Responsive to user interaction patterns
+- **AI Integration**:
+  - OpenAI-powered plant generation
+  - Intelligent plant characteristic mapping
+  - Dynamic behavior patterns
+  - Unique plant personalities
 
 ## Technologies Used
 
-- **P5.js**: For visual rendering and animation
-- **Tone.js**: For audio synthesis and musical elements
-- **ML5.js**: For AI behavior patterns
+- **Frontend**:
+  - P5.js (v2.0.2): Visual rendering and animation
+  - Tone.js (v15.1.22): Audio synthesis and music generation
+  - ML5.js (v1.2.1): Machine learning features
 
-## Getting Started
-
-1. Clone or download this repository
-2. Ensure you have a local web server running (e.g., MAMP, XAMPP)
-3. Open `index.html` in your web browser
-4. Click anywhere on the page to initialize audio
-5. Start interacting with the garden!
-
-## Controls
-
-- **Mouse Movement**: Hover near flowers to energize them
-- **Mouse Click**: Boost flower energy and trigger sound
-- **Space Bar**: Toggle AI mode
-- **UI Buttons**:
-  - Toggle AI Mode: Enable/disable autonomous behavior
-  - Reset Garden: Start fresh with new flowers
-  - Add Plant: Introduce a new random flower
+- **Backend**:
+  - Bun.js: Runtime environment
+  - Express.js (v5.1.0): Web server
+  - OpenAI API (v4.102.0): AI plant generation
 
 ## Project Structure
 
-```
+```text
 .
-├── index.html          # Main HTML file
-├── style.css          # CSS styling
-├── sketch.js          # Main P5.js code
-└── libraries/         # External libraries
-    ├── p5.min.js
-    └── p5.sound.min.js
+├── public/               # Static files
+│   └── index.html       # Main HTML file
+├── src/
+│   ├── client/          # Frontend code
+│   │   ├── assets/      # Static assets
+│   │   │   └── libs/    # Client-side libraries
+│   │   ├── js/          # Client JavaScript
+│   │   │   ├── config.js
+│   │   │   └── sketch.js
+│   │   └── styles/      # CSS styling
+│   └── server/          # Backend code
+│       ├── app.js       # Express server
+│       └── services/    # Server services
+│           └── aiPlantGenerator.js
+├── package.json         # Project configuration
+└── README.md           # Documentation
+```
+
+## Getting Started
+
+1. Clone the repository
+
+2. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+3. Create a `.env` file with your OpenAI API key:
+
+   ```env
+   OPENAI_API_KEY=your-api-key-here
+   ```
+
+4. Start the development server:
+
+   ```bash
+   bun dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## API Endpoints
+
+- **POST /api/generate-plant**
+  - Generates new AI-powered plants
+  - Rate limited to 50 requests per minute
+  - Supports batch generation (max 100 plants per request)
+
+## Environment Requirements
+
+- Bun runtime
+- Modern web browser with Web Audio API support
+- Active internet connection for AI features
+- OpenAI API key
+
+## Development Scripts
+
+- `bun start`: Start the production server
+- `bun dev`: Start development server with hot reload
+
+## Dependencies
+
+```json
+{
+  "dotenv": "^16.5.0",
+  "express": "^5.1.0",
+  "ml5": "^1.2.1",
+  "openai": "^4.102.0",
+  "p5": "^2.0.2",
+  "tone": "^15.1.22"
+}
 ```
 
 ## Performance Notes
 
-- For best performance, use a modern browser with Web Audio API support
-- Initial audio context requires user interaction (click) to start
-- Recommended to limit total flowers to 20 for optimal performance
+- Initial audio context requires user interaction
+- Rate limiting applies to plant generation
+- Batch processing implemented for multiple plant generation
+- Error handling and validation for all plant generation
 
-## Dependencies
+## Future Enhancements
 
-- P5.js v1.6.0
-- Tone.js v14.8.39
-- ML5.js (latest version)
+- Enhanced plant variety and behaviors
+- Advanced sound synthesis patterns
+- Collaborative garden features
+- Weather and environmental effects
+- Extended AI capabilities
+- Plant lifecycle simulation
 
 ## License
 
@@ -85,14 +142,6 @@ This project is open source and available under the MIT License.
 
 ## Acknowledgments
 
-- Inspired by generative art and creative coding practices
-- Built as part of the Creative Coding module
-- Special thanks to the P5.js, Tone.js, and ML5.js communities
-
-## Future Enhancements
-
-- Additional flower types with unique behaviors
-- More complex AI interaction patterns
-- Weather effects influencing garden behavior
-- Collaborative garden features
-- Sound visualization elements
+- Built with Bun and modern web technologies
+- Powered by OpenAI's API
+- Special thanks to the P5.js and Tone.js communities
