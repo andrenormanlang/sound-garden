@@ -34,13 +34,24 @@ The structure must be:
 
 const USER_PROMPT_RAINBOW = `Generate a specification for a truly psychedelic and awe-inspiring rainbow according to the exact JSON structure defined in the system prompt.
 Requirements:
-1) The "visualProperties.colors" array should contain 5-7 vibrant, contrasting colors.
+1) The "visualProperties.colors" array should contain 5-7 vibrant, contrasting colors. Consider using traditional rainbow colors (Red, Orange, Yellow, Green, Blue, Indigo, Violet) or creative variations of them for a more authentic rainbow appearance.
 2) "visualProperties.animationStyle" should be captivating, like "pulsating" or "drifting_waves".
 3) The sound properties should describe a deeply harmonic and ethereal soundscape with noticeable reverb.
 4) Ensure all parameters are within their specified ranges and types (integers where specified, floats allowed for others).
 5) All RGB color components in "visualProperties.colors" must be integers.
 6) "visualProperties.arcCount" and "soundProperties.durationSeconds" must be integers.
-7) Adhere strictly to the nested JSON structure: top-level "name", "description", "visualProperties" (object), and "soundProperties" (object).`;
+7) Adhere strictly to the nested JSON structure: top-level "name", "description", "visualProperties" (object), and "soundProperties" (object).
+
+For better rainbow appearance, consider colors like:
+- Red: [255, 0, 0]
+- Orange: [255, 165, 0] 
+- Yellow: [255, 255, 0]
+- Green: [0, 255, 0]
+- Blue: [0, 0, 255]
+- Indigo: [75, 0, 130]
+- Violet: [148, 0, 211]
+
+But feel free to create vibrant variations of these traditional rainbow colors.`;
 
 function ensureIntegerLocal(value) {
   if (typeof value === "string") {
@@ -273,7 +284,7 @@ async function generateRainbow() {
         `Validation failed for rainbow data: ${validationErrors.join("; ")}`
       ); //  template literal
     }
- 
+
     return rainbowData; // Return the (potentially nested) validated data
   } catch (error) {
     console.error("Error in generateRainbow:", error.message, error.stack);

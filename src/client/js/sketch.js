@@ -392,6 +392,25 @@ class PsychedelicRainbow {
     this.data = data; // Contains visualProperties and soundProperties
     this.startTime = millis();
     this.alive = true;
+    this.isHovered = false;
+    this.soundPlaying = false;
+
+    // Define traditional rainbow colors (ROYGBIV) as default - softer tones for ethereal effect
+    this.defaultRainbowColors = [
+      [240, 80, 80], // Softer Red
+      [240, 150, 60], // Softer Orange
+      [240, 240, 80], // Softer Yellow
+      [80, 240, 80], // Softer Green
+      [80, 80, 240], // Softer Blue
+      [120, 60, 180], // Softer Indigo
+      [180, 80, 220], // Softer Violet
+    ];
+
+    // Rainbow position and size properties
+    this.centerX = width / 2;
+    this.centerY = height - GROUND_HEIGHT - 30;
+    this.maxRadius = width / 3;
+    this.minRadius = width / 6;
 
     // Initialize sound
     // Ensure soundProperties and its nested properties exist
@@ -425,7 +444,53 @@ class PsychedelicRainbow {
     this.reverb.wet.value = reverbMix;
     this.synth.connect(this.reverb);
 
+    // Don't play sound automatically - only on hover
+  }
+
+  // Check if mouse is hovering over the rainbow
+  isMouseOver(mouseX, mouseY) {
+    // Check if mouse is within the rainbow arc area
+    const dx = mouseX - this.centerX;
+    const dy = mouseY - this.centerY;
+    const distance = sqrt(dx * dx + dy * dy);
+
+    // Check if mouse is within rainbow radius range and above the ground
+    const withinRadius =
+      distance >= this.minRadius && distance <= this.maxRadius;
+    const aboveGround = mouseY <= this.centerY;
+
+    // Check if mouse is in the upper semicircle (rainbow arc area)
+    const angle = atan2(dy, dx);
+    const inArcArea = angle >= PI * 0.05 && angle <= PI * 0.95; // Expanded range for better detection
+
+    return withinRadius && aboveGround && inArcArea;
+  }
+
+  // Start playing sound on hover
+  startHoverSound() {
+    if (!soundEnabled || this.soundPlaying) return;
+    this.soundPlaying = true;
     this.playHarmonicSound();
+  }
+
+  // Stop sound when hover ends
+  stopHoverSound() {
+    if (this.synth && this.soundPlaying) {
+      this.synth.releaseAll();
+      this.soundPlaying = false;
+    }
+  }
+
+  // Update hover state
+  updateHover(mouseX, mouseY) {
+    const wasHovered = this.isHovered;
+    this.isHovered = this.isMouseOver(mouseX, mouseY);
+
+    if (this.isHovered && !wasHovered) {
+      this.startHoverSound();
+    } else if (!this.isHovered && wasHovered) {
+      this.stopHoverSound();
+    }
   }
 
   playHarmonicSound() {
@@ -495,69 +560,128 @@ class PsychedelicRainbow {
   display() {
     if (!this.alive) return;
 
-    // Ensure soundProperties and visualProperties and their nested properties exist
     const durationSeconds =
       this.data.soundProperties && this.data.soundProperties.durationSeconds
         ? this.data.soundProperties.durationSeconds
         : 10;
-    const arcCount =
-      this.data.visualProperties && this.data.visualProperties.arcCount
-        ? this.data.visualProperties.arcCount
-        : 7;
-    const arcThickness =
-      this.data.visualProperties && this.data.visualProperties.arcThickness
-        ? this.data.visualProperties.arcThickness
-        : 10;
-    const colors =
-      this.data.visualProperties &&
-      this.data.visualProperties.colors &&
-      this.data.visualProperties.colors.length > 0
-        ? this.data.visualProperties.colors
-        : [[255, 0, 0]]; // Default to red if no colors
-    const animationStyle =
-      this.data.visualProperties && this.data.visualProperties.animationStyle
-        ? this.data.visualProperties.animationStyle
-        : "static";
 
     const elapsedTime = (millis() - this.startTime) / 1000;
     const progress = elapsedTime / durationSeconds;
     if (progress > 1) return;
 
+    // Use traditional rainbow colors or AI-generated ones
+    const colors =
+      this.data.visualProperties &&
+      this.data.visualProperties.colors &&
+      this.data.visualProperties.colors.length > 0
+        ? this.data.visualProperties.colors
+        : this.defaultRainbowColors;
+
+    const animationStyle =
+      this.data.visualProperties && this.data.visualProperties.animationStyle
+        ? this.data.visualProperties.animationStyle
+        : "static";
+
+    // Rainbow properties - more translucent for ethereal appearance
+    const baseAlpha = 120 * (1 - progress * 0.3); // More translucent, fade out slower
+    const arcThickness = 25; // Thicker arcs for better rainbow appearance
+    const numBands = colors.length;
+
     push();
-    translate(width / 2, height - GROUND_HEIGHT - 50);
 
-    for (let i = 0; i < arcCount; i++) {
-      const arcRadius = width / 3 + i * arcThickness * 1.5;
-      const colorIndex = i % colors.length;
-      const c = colors[colorIndex];
-
-      let currentAlpha = 200 * (1 - progress);
-      let currentThickness = arcThickness;
-
-      if (animationStyle === "pulsating") {
-        currentAlpha *= 0.75 + sin(elapsedTime * PI * 0.5 + i * 0.5) * 0.25;
-        currentThickness *= 0.8 + sin(elapsedTime * PI * 0.75 + i * 0.3) * 0.2;
-      } else if (animationStyle === "shimmering") {
-        currentAlpha *= 0.6 + noise(elapsedTime * 2 + i) * 0.4;
-      } else if (animationStyle === "breathing") {
-        const breath = (1 + sin(elapsedTime * PI * 0.3)) / 2;
-        currentAlpha *= 0.5 + breath * 0.5;
-        currentThickness *= 0.7 + breath * 0.3;
-      } else if (animationStyle === "drifting_waves") {
-        const waveOffset = sin(elapsedTime * 0.5 + i * 0.5) * 20;
-        translate(waveOffset, 0);
-      }
-
-      noFill();
-      strokeWeight(max(1, currentThickness));
-      // Ensure 'c' is a valid array with 3 components for color
-      if (Array.isArray(c) && c.length >= 3) {
-        stroke(c[0], c[1], c[2], max(0, currentAlpha));
-      } else {
-        stroke(255, 0, 0, max(0, currentAlpha)); // Default to red if color data is invalid
-      }
-      arc(0, 0, arcRadius * 2, arcRadius * 1.5, PI, TWO_PI);
+    // Apply animation effects
+    if (animationStyle === "pulsating") {
+      const pulse = 0.9 + sin(elapsedTime * PI * 0.8) * 0.1;
+      scale(pulse);
+    } else if (animationStyle === "breathing") {
+      const breath = 0.95 + sin(elapsedTime * PI * 0.4) * 0.05;
+      scale(breath);
+    } else if (animationStyle === "drifting_waves") {
+      const drift = sin(elapsedTime * 0.6) * 10;
+      translate(drift, 0);
     }
+
+    translate(this.centerX, this.centerY);
+
+    // Draw rainbow bands from outer to inner (red on outside, violet on inside)
+    for (let i = 0; i < numBands; i++) {
+      const bandRadius = this.maxRadius - i * arcThickness;
+      const colorIndex = i % colors.length;
+      const color = colors[colorIndex];
+
+      let currentAlpha = baseAlpha;
+
+      // Animation effects on alpha
+      if (animationStyle === "shimmering") {
+        currentAlpha *= 0.7 + noise(elapsedTime * 2 + i * 0.5) * 0.3;
+      } else if (animationStyle === "pulsating") {
+        currentAlpha *= 0.8 + sin(elapsedTime * PI * 0.6 + i * 0.4) * 0.2;
+      }
+
+      // Highlight on hover - subtle increase to maintain translucency
+      if (this.isHovered) {
+        currentAlpha *= 1.15; // Reduced from 1.3 for more subtle effect
+      }
+
+      // Draw the rainbow band as a thick arc
+      noFill();
+      strokeWeight(arcThickness);
+      strokeCap(ROUND);
+
+      if (Array.isArray(color) && color.length >= 3) {
+        stroke(color[0], color[1], color[2], max(0, currentAlpha));
+      } else {
+        stroke(255, 0, 0, max(0, currentAlpha)); // Default to red
+      }
+
+      // Draw semicircle arc for rainbow shape
+      arc(0, 0, bandRadius * 2, bandRadius * 2, PI, TWO_PI);
+
+      // Add subtle inner glow effect on hover
+      if (this.isHovered) {
+        strokeWeight(arcThickness * 0.3);
+        stroke(255, 255, 255, currentAlpha * 0.2); // Reduced from 0.3 for subtlety
+        arc(0, 0, bandRadius * 2, bandRadius * 2, PI, TWO_PI);
+      }
+    }
+
+    // Add sparkle effect when hovered
+    if (this.isHovered) {
+      this.drawSparkles(elapsedTime);
+    }
+
+    pop();
+  }
+
+  // Draw sparkle effects for magical touch
+  drawSparkles(elapsedTime) {
+    push();
+
+    // Generate sparkles along the rainbow arc
+    for (let i = 0; i < 8; i++) {
+      const angle = PI + (PI * i) / 7; // Distribute along semicircle
+      const radius = this.minRadius + random(this.maxRadius - this.minRadius);
+      const x = cos(angle) * radius;
+      const y = sin(angle) * radius;
+
+      const sparkleAlpha = 100 + sin(elapsedTime * 4 + i) * 60; // Reduced intensity for ethereal effect
+      fill(255, 255, 255, max(0, sparkleAlpha));
+      noStroke();
+
+      push();
+      translate(x, y);
+      rotate(elapsedTime * 2 + i);
+
+      // Draw star-like sparkle
+      const sparkleSize = 3 + sin(elapsedTime * 3 + i) * 2;
+      for (let j = 0; j < 4; j++) {
+        rotate(PI / 4);
+        ellipse(0, 0, sparkleSize, sparkleSize * 0.3);
+      }
+
+      pop();
+    }
+
     pop();
   }
 
@@ -2043,6 +2167,8 @@ function draw() {
   // Update and display active rainbows FIRST so they are in the background
   for (let i = activeRainbows.length - 1; i >= 0; i--) {
     activeRainbows[i].update();
+    // Update hover state for mouse interaction
+    activeRainbows[i].updateHover(mouseX, mouseY);
     activeRainbows[i].display();
     if (!activeRainbows[i].alive) {
       activeRainbows.splice(i, 1);
