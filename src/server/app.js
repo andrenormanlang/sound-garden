@@ -202,12 +202,10 @@ app.post("/api/generate-weather", async (req, res) => {
   }
 });
 
-// Start server only when running directly (not in Netlify Functions)
+// Start server on specified port
 const PORT = process.env.PORT || 3000;
-if (import.meta.url === `file://${process.argv[1]}`) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 export default app;

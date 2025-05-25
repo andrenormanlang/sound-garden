@@ -38,7 +38,7 @@ function setLoadingState(button, isLoading) {
 let soundEnabled = true; // Global sound toggle state
 
 // Ground and environment variables
-const GROUND_HEIGHT = 150; // Increased from 100
+const GROUND_HEIGHT = 250; // Increased ground height significantly
 let grassHeight = [];
 let grassWind = 0;
 
