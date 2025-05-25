@@ -409,8 +409,18 @@ class PsychedelicRainbow {
     // Rainbow position and size properties
     this.centerX = width / 2;
     this.centerY = height - GROUND_HEIGHT - 30;
-    this.maxRadius = width / 3;
-    this.minRadius = width / 6;
+
+    // Generate random width and height variations for each rainbow
+    const widthVariation = random(0.7, 1.3); // Width can vary from 70% to 130% of base
+    const heightVariation = random(0.6, 1.2); // Height can vary from 60% to 120% of base
+
+    // Apply variations to base dimensions
+    this.maxRadius = (width / 3) * widthVariation;
+    this.minRadius = (width / 6) * widthVariation;
+
+    // Apply height variation by adjusting center Y position
+    const baseY = height - GROUND_HEIGHT - 30;
+    this.centerY = baseY + this.maxRadius * (1 - heightVariation) * 0.3;
 
     // Initialize sound
     // Ensure soundProperties and its nested properties exist
@@ -438,7 +448,7 @@ class PsychedelicRainbow {
         release: 2.0,
       },
       volume: -12,
-    }).toDestination();
+    });
 
     this.reverb = new Tone.Reverb(durationSeconds * 0.5).toDestination();
     this.reverb.wet.value = reverbMix;
@@ -636,7 +646,7 @@ class PsychedelicRainbow {
 
       // Draw arc that extends behind the ground for a more natural rainbow appearance
       const startAngle = PI * 0.8; // Start angle extending behind left side
-      const endAngle = PI * 2.2;   // End angle extending behind right side
+      const endAngle = PI * 2.2; // End angle extending behind right side
       arc(0, 0, bandRadius * 2, bandRadius * 2, startAngle, endAngle);
 
       // Add subtle inner glow effect on hover
