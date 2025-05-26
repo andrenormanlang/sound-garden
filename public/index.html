@@ -138,15 +138,67 @@
       </div>
     </div>
 
-    <!-- Weather Info Panel - Responsive positioning -->
+    <!-- Weather Info Panel - Responsive positioning with dropdown -->
     <div
-      class="weather-info fixed top-2 right-2 sm:top-5 sm:right-[calc(5rem+20rem)] md:right-[calc(5rem+22rem)] lg:right-[calc(5rem+24rem)] text-white bg-black bg-opacity-80 p-2 sm:p-4 rounded-lg z-[1000] max-w-[280px] sm:max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-xs sm:text-sm hidden"
-    ></div>
+      class="weather-info-container fixed top-2 right-2 sm:top-5 sm:right-[calc(5rem+20rem)] md:right-[calc(5rem+22rem)] lg:right-[calc(5rem+24rem)] text-white bg-black bg-opacity-80 p-2 sm:p-4 rounded-lg z-[1000] max-w-[280px] sm:max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-xs sm:text-sm hidden"
+    >
+      <!-- Weather Info Header with toggle -->
+      <button
+        onclick="toggleWeatherInfo()"
+        class="flex items-center justify-between w-full font-bold text-left text-white hover:text-blue-300 transition-colors duration-200 text-xs sm:text-sm mb-2"
+        id="weather-info-toggle"
+      >
+        <span>🌦️ Weather Info</span>
+        <span
+          class="transform transition-transform duration-200"
+          id="weather-info-arrow"
+          >▼</span
+        >
+      </button>
 
-    <!-- AI Info Panel - Responsive positioning -->
+      <!-- Weather Info Content (collapsible) -->
+      <div
+        id="weather-info-dropdown"
+        class="overflow-hidden transition-all duration-300 ease-in-out"
+        style="max-height: 0px; opacity: 0"
+      >
+        <div
+          id="weather-info-content"
+          class="weather-info max-h-48 overflow-y-auto"
+        ></div>
+      </div>
+    </div>
+
+    <!-- AI Info Panel - Responsive positioning with dropdown -->
     <div
-      class="ai-info fixed top-2 right-2 sm:top-5 sm:right-5 text-white bg-black bg-opacity-80 p-2 sm:p-4 rounded-lg z-[1000] max-w-[280px] sm:max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-xs sm:text-sm"
-    ></div>
+      class="ai-info-container fixed top-2 right-2 sm:top-5 sm:right-5 text-white bg-black bg-opacity-80 p-2 sm:p-4 rounded-lg z-[1000] max-w-[280px] sm:max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-xs sm:text-sm"
+    >
+      <!-- AI Info Header with toggle -->
+      <button
+        onclick="toggleAIInfo()"
+        class="flex items-center justify-between w-full font-bold text-left text-white hover:text-yellow-300 transition-colors duration-200 text-xs sm:text-sm mb-2"
+        id="ai-info-toggle"
+      >
+        <span>🤖 AI Garden Info</span>
+        <span
+          class="transform transition-transform duration-200"
+          id="ai-info-arrow"
+          >▼</span
+        >
+      </button>
+
+      <!-- AI Info Content (collapsible) -->
+      <div
+        id="ai-info-dropdown"
+        class="overflow-hidden transition-all duration-300 ease-in-out"
+        style="max-height: 200px; opacity: 1"
+      >
+        <div
+          id="ai-info-content"
+          class="ai-info max-h-48 overflow-y-auto"
+        ></div>
+      </div>
+    </div>
 
     <script>
       async function generateMultiplePlants(quantity) {
@@ -244,6 +296,93 @@
           dropdown.style.maxHeight = maxHeight + "px";
           content.style.maxHeight = maxHeight - 16 + "px";
         }
+      });
+
+      // Toggle AI Info panel dropdown
+      function toggleAIInfo() {
+        const dropdown = document.getElementById("ai-info-dropdown");
+        const arrow = document.getElementById("ai-info-arrow");
+        const isOpen =
+          dropdown.style.maxHeight !== "0px" && dropdown.style.maxHeight !== "";
+
+        if (isOpen) {
+          // Close dropdown
+          dropdown.style.maxHeight = "0px";
+          dropdown.style.opacity = "0";
+          arrow.style.transform = "rotate(0deg)";
+        } else {
+          // Open dropdown with responsive height
+          const viewportHeight = window.innerHeight;
+          const maxHeight = Math.min(300, viewportHeight * 0.4); // Max 40% of screen height or 300px
+
+          dropdown.style.maxHeight = maxHeight + "px";
+          dropdown.style.opacity = "1";
+          arrow.style.transform = "rotate(180deg)";
+        }
+      }
+
+      // Store AI info panel state in localStorage
+      window.addEventListener("load", function () {
+        const savedAIInfoState = localStorage.getItem("soundGardenAIInfoOpen");
+        if (savedAIInfoState === "false") {
+          toggleAIInfo(); // Close if it was closed before
+        }
+      });
+
+      // Save AI info panel state when toggled
+      window.addEventListener("beforeunload", function () {
+        const dropdown = document.getElementById("ai-info-dropdown");
+        const isOpen =
+          dropdown.style.maxHeight !== "0px" && dropdown.style.maxHeight !== "";
+        localStorage.setItem("soundGardenAIInfoOpen", isOpen.toString());
+      });
+
+      // Toggle Weather Info panel dropdown
+      function toggleWeatherInfo() {
+        const dropdown = document.getElementById("weather-info-dropdown");
+        const arrow = document.getElementById("weather-info-arrow");
+        const isOpen =
+          dropdown.style.maxHeight !== "0px" && dropdown.style.maxHeight !== "";
+
+        if (isOpen) {
+          // Close dropdown
+          dropdown.style.maxHeight = "0px";
+          dropdown.style.opacity = "0";
+          arrow.style.transform = "rotate(0deg)";
+        } else {
+          // Open dropdown with responsive height
+          const viewportHeight = window.innerHeight;
+          const maxHeight = Math.min(300, viewportHeight * 0.4); // Max 40% of screen height or 300px
+
+          dropdown.style.maxHeight = maxHeight + "px";
+          dropdown.style.opacity = "1";
+          arrow.style.transform = "rotate(180deg)";
+        }
+      }
+
+      // Store weather info panel state in localStorage
+      window.addEventListener("load", function () {
+        const savedWeatherInfoState = localStorage.getItem(
+          "soundGardenWeatherInfoOpen"
+        );
+        if (savedWeatherInfoState === "false") {
+          const weatherContainer = document.querySelector(
+            ".weather-info-container"
+          );
+          if (!weatherContainer.classList.contains("hidden")) {
+            toggleWeatherInfo(); // Close if it was closed before
+          }
+        }
+      });
+
+      // Save weather info panel state when toggled
+      window.addEventListener("beforeunload", function () {
+        const dropdown = document.getElementById("weather-info-dropdown");
+        const isOpen =
+          dropdown &&
+          dropdown.style.maxHeight !== "0px" &&
+          dropdown.style.maxHeight !== "";
+        localStorage.setItem("soundGardenWeatherInfoOpen", isOpen.toString());
       });
     </script>
 

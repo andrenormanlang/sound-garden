@@ -25,7 +25,7 @@ window.addEventListener("load", () => {
   aiPlantBtn = document.querySelector(
     'button[onclick="generateExoticPlant()"]'
   ); // The AI Plant button
-  aiInfo = document.querySelector(".ai-info");
+  aiInfo = document.querySelector("#ai-info-content"); // Updated to target the content div
   // Get the rainbow button by its onclick attribute
   rainbowPlantBtn = document.querySelector(
     'button[onclick="generatePsychedelicRainbow()"]'
@@ -419,9 +419,10 @@ window.generatePsychedelicRainbow = async function () {
         }</p>
       </div>
     `;
-    // Prepend to aiInfo or a dedicated rainbow info panel
-    const currentInfo = document.querySelector(".ai-info").innerHTML;
-    document.querySelector(".ai-info").innerHTML = infoHTML + currentInfo;
+    // Prepend to AI info content panel
+    const aiInfoContent = document.querySelector("#ai-info-content");
+    const currentInfo = aiInfoContent.innerHTML;
+    aiInfoContent.innerHTML = infoHTML + currentInfo;
   } catch (error) {
     console.error("Error generating psychedelic rainbow:", error);
     alert("Error generating rainbow. Please check console.");
@@ -1816,17 +1817,25 @@ window.generateWeatherEvent = async function () {
   const weatherBtn = document.querySelector(
     'button[onclick="generateWeatherEvent()"]'
   );
-  const weatherInfo = document.querySelector(".weather-info");
+  const weatherInfoContainer = document.querySelector(
+    ".weather-info-container"
+  );
+  const weatherInfoContent = document.querySelector("#weather-info-content");
 
   console.log("Weather button found:", !!weatherBtn);
-  console.log("Weather info panel found:", !!weatherInfo);
+  console.log("Weather info container found:", !!weatherInfoContainer);
+  console.log("Weather info content found:", !!weatherInfoContent);
 
   try {
     setLoadingState(weatherBtn, true);
-    weatherInfo.classList.add("loading");
+    if (weatherInfoContent) {
+      weatherInfoContent.classList.add("loading");
+    }
 
     // Show the weather info panel
-    weatherInfo.classList.remove("hidden");
+    if (weatherInfoContainer) {
+      weatherInfoContainer.classList.remove("hidden");
+    }
     console.log("Weather panel should now be visible");
 
     console.log("Fetching weather data...");
@@ -1862,13 +1871,17 @@ window.generateWeatherEvent = async function () {
         <p>Duration: ${weatherData.duration} seconds</p>
       </div>
     `;
-    weatherInfo.innerHTML = infoHTML;
+    if (weatherInfoContent) {
+      weatherInfoContent.innerHTML = infoHTML;
+    }
   } catch (error) {
     console.error("Error generating weather:", error);
     alert("Error generating weather. Please try again.");
   } finally {
     setLoadingState(weatherBtn, false);
-    weatherInfo.classList.remove("loading");
+    if (weatherInfoContent) {
+      weatherInfoContent.classList.remove("loading");
+    }
   }
 };
 

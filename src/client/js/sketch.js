@@ -1728,11 +1728,21 @@ function drawWeather() {
 // Function to trigger weather events
 async function generateWeatherEvent() {
   const weatherBtn = document.querySelector(".weather-btn");
-  const weatherInfo = document.querySelector(".weather-info");
+  const weatherInfoContainer = document.querySelector(
+    ".weather-info-container"
+  );
+  const weatherInfoContent = document.querySelector("#weather-info-content");
 
   try {
     setLoadingState(weatherBtn, true);
-    weatherInfo.classList.add("loading");
+    if (weatherInfoContent) {
+      weatherInfoContent.classList.add("loading");
+    }
+
+    // Show the weather info panel
+    if (weatherInfoContainer) {
+      weatherInfoContainer.classList.remove("hidden");
+    }
 
     const response = await fetch("/api/generate-weather", {
       method: "POST",
@@ -1758,20 +1768,24 @@ async function generateWeatherEvent() {
     // Update info panel with weather description
     const infoHTML = `
       <h4>🌦️ Current Weather</h4>
-      <div class="weather-info">
+      <div class="weather-details">
         <p><strong>${weatherData.name}</strong></p>
         <p>${weatherData.description}</p>
         <p>Impact: ${weatherData.impact}</p>
         <p>Duration: ${weatherData.duration} seconds</p>
       </div>
     `;
-    document.querySelector(".weather-info").innerHTML = infoHTML;
+    if (weatherInfoContent) {
+      weatherInfoContent.innerHTML = infoHTML;
+    }
   } catch (error) {
     console.error("Error generating weather:", error);
     alert("Error generating weather. Please try again.");
   } finally {
     setLoadingState(weatherBtn, false);
-    weatherInfo.classList.remove("loading");
+    if (weatherInfoContent) {
+      weatherInfoContent.classList.remove("loading");
+    }
   }
 }
 
