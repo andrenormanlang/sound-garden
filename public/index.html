@@ -12,20 +12,17 @@
     class="m-0 p-0 overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800 font-sans"
   >
     <div
-      class="info-panel absolute top-5 left-5 text-white bg-black bg-opacity-70 p-4 rounded-lg z-50 max-w-xs"
+      class="info-panel absolute top-2 left-2 sm:top-5 sm:left-5 text-white bg-black bg-opacity-70 p-2 sm:p-4 rounded-lg z-50 max-w-[280px] sm:max-w-xs"
     >
-      <h3 class="text-lg font-semibold mb-2">🌸🌹 🌷 🌻 🌺 🪷 🌼 🌿</h3>
-      <!-- <p>
-        Explore a diverse garden with different flower types! Each flower has
-        unique shapes, colors, and musical scales.
-      </p> -->
-      <!-- <p>🌹 Rose, 🌷 Tulip, 🌻 Daisy, 🌺 Orchid, 🪷 Lotus, 🌼 Dandelion, 🌿</p> -->
+      <h3 class="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">
+        🌸🌹 🌷 🌻 🌺 🪷 🌼 🌿
+      </h3>
 
       <!-- Dropdown Controls -->
-      <div class="mb-4">
+      <div class="mb-2 sm:mb-4">
         <button
           onclick="toggleControls()"
-          class="flex items-center justify-between w-full font-bold text-left text-white hover:text-yellow-300 transition-colors duration-200"
+          class="flex items-center justify-between w-full font-bold text-left text-white hover:text-yellow-300 transition-colors duration-200 text-xs sm:text-sm"
           id="controls-toggle"
         >
           <span>Garden Controls</span>
@@ -38,83 +35,118 @@
 
         <div
           id="controls-dropdown"
-          class="mt-2 overflow-hidden transition-all duration-300 ease-in-out"
+          class="mt-1 sm:mt-2 overflow-hidden transition-all duration-300 ease-in-out"
           style="max-height: 0; opacity: 0"
         >
-          <ul
-            class="text-sm space-y-2 pl-4 border-l-2 border-yellow-400 border-opacity-30 list-disc list-inside"
+          <div
+            id="controls-content"
+            class="flex flex-col gap-2 p-2 overflow-y-auto scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-gray-700"
           >
-            <li class="flex items-start">
-              Mouse: Hover and click to interact with plants (default)
-            </li>
-            <li class="flex items-start">
-              Press '2': Toggle Random Plant Creator (crosshair to place
-              flowers)
-            </li>
-            <li class="flex items-start">
-              Press '3': Toggle AI Plant Creator (crosshair to place AI flowers)
-              🤖
-            </li>
-            <li class="flex items-start">
-              Press 'E': Toggle Eraser (crosshair to remove plants)
-            </li>
-            <li class="flex items-start">Press 'C': Clear entire garden</li>
-            <li class="flex items-start">Press 'M': Toggle sound on/off 🔊</li>
-          </ul>
+            <!-- Basic interaction info -->
+            <div class="text-xs sm:text-sm text-gray-300 mb-2">
+              <span class="hidden sm:inline"
+                >Mouse: Hover and click to interact with plants</span
+              >
+              <span class="sm:hidden">Tap/click to interact with plants</span>
+            </div>
+
+            <!-- Garden Controls -->
+            <div class="flex flex-col gap-2">
+              <!-- Creator Mode Button -->
+              <button
+                onclick="toggleCreatorMode()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-orange-500 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>Creator Mode</span>
+                <span class="text-sm">➕</span>
+              </button>
+
+              <!-- Eraser Mode Button -->
+              <button
+                onclick="toggleEraserMode()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-red-600 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>Eraser Mode</span>
+                <span class="text-sm">❌</span>
+              </button>
+
+              <!-- Random Plant Button -->
+              <button
+                onclick="addRandomPlant()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-purple-600 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>Random Plant</span>
+                <span class="text-sm">🌸</span>
+              </button>
+
+              <!-- AI Plant Button -->
+              <button
+                onclick="generateExoticPlant()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-green-600 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>AI Plant</span>
+                <span class="text-sm">🌱</span>
+              </button>
+
+              <!-- Weather Button -->
+              <button
+                onclick="generateWeatherEvent()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-blue-500 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>Change Weather</span>
+                <span class="text-sm">🌤️</span>
+              </button>
+
+              <!-- AI Rainbow Button -->
+              <button
+                onclick="generatePsychedelicRainbow()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-indigo-600 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>AI Rainbow</span>
+                <span class="text-sm">🌈</span>
+              </button>
+            </div>
+
+            <!-- Divider -->
+            <div
+              class="border-t border-yellow-400 border-opacity-30 my-2"
+            ></div>
+
+            <!-- Quick Actions -->
+            <div class="flex flex-col gap-2">
+              <button
+                onclick="resetGarden()"
+                class="btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-gray-600 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span>Reset Garden</span>
+                <span class="text-xs text-gray-400">('C')</span>
+              </button>
+
+              <button
+                onclick="toggleSound()"
+                class="sound-toggle-btn btn-dropdown flex items-center justify-between w-full px-3 py-2 bg-yellow-500 bg-opacity-40 hover:bg-opacity-60 text-white rounded transition-all"
+              >
+                <span class="sound-text">Toggle Sound</span>
+                <span class="flex items-center gap-2">
+                  <span class="sound-icon text-sm">🔊</span>
+                  <span class="text-xs text-gray-400">('M')</span>
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <div
-        class="weather-info fixed top-5 right-[calc(5rem+20rem)] text-white bg-black bg-opacity-80 p-4 rounded-lg z-[1000] max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-sm"
-      ></div>
-      <div
-        class="ai-info fixed top-5 right-5 text-white bg-black bg-opacity-80 p-4 rounded-lg z-[1000] max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-sm"
-      ></div>
     </div>
 
-    <div class="controls absolute bottom-5 left-5 z-50 flex gap-3 flex-wrap">
-      <button
-        class="btn sound-toggle-btn relative inline-flex items-center justify-center px-4 py-2 bg-yellow-400 bg-opacity-80 text-gray-800 border-none rounded font-bold text-sm min-w-[120px] transition-all duration-300 gap-2 hover:bg-yellow-400 hover:bg-opacity-100"
-        onclick="toggleSound()"
-      >
-        <span class="sound-icon text-base">🔊</span>
-        <span class="sound-text">Sound On</span>
-      </button>
-      <button
-        class="btn weather-btn relative inline-flex items-center justify-center px-4 py-2 bg-gradient-to-br from-blue-400 to-blue-500 bg-opacity-80 text-white border-none rounded cursor-pointer text-sm min-w-[120px] transition-all duration-300 gap-2 hover:from-blue-400 hover:to-blue-500 hover:bg-opacity-100"
-        onclick="generateWeatherEvent()"
-      >
-        <div class="spinner w-4 h-4 relative mr-1" style="display: none"></div>
-        <span>Change Weather</span>
-      </button>
-      <button
-        class="btn relative inline-flex items-center justify-center px-4 py-2 bg-green-600 bg-opacity-80 text-white border-none rounded cursor-pointer text-sm min-w-[120px] transition-all duration-300 gap-2 hover:bg-green-600 hover:bg-opacity-100"
-        onclick="generateExoticPlant()"
-      >
-        <div class="spinner w-4 h-4 relative mr-1" style="display: none"></div>
-        <span>AI Plant</span>
-      </button>
-      <button
-        class="btn relative inline-flex items-center justify-center px-4 py-2 bg-green-600 bg-opacity-80 text-white border-none rounded cursor-pointer text-sm min-w-[120px] transition-all duration-300 gap-2 hover:bg-green-600 hover:bg-opacity-100"
-        onclick="generatePsychedelicRainbow()"
-      >
-        <div class="spinner w-4 h-4 relative mr-1" style="display: none"></div>
-        <span>AI Rainbow</span>
-      </button>
-      <!-- <button class="btn" onclick="generateMultiplePlants(50)">
-        <div class="spinner"></div>
-        <span>Add 50 Plants</span>
-      </button>
-      <button class="btn" onclick="generateMultiplePlants(100)">
-        <div class="spinner"></div>
-        <span>Add 100 Plants</span>
-      </button> -->
-      <button
-        class="btn relative inline-flex items-center justify-center px-4 py-2 bg-green-600 bg-opacity-80 text-white border-none rounded cursor-pointer text-sm min-w-[120px] transition-all duration-300 gap-2 hover:bg-green-600 hover:bg-opacity-100"
-        onclick="resetGarden()"
-      >
-        <span>Reset Garden</span>
-      </button>
-    </div>
+    <!-- Weather Info Panel - Responsive positioning -->
+    <div
+      class="weather-info fixed top-2 right-2 sm:top-5 sm:right-[calc(5rem+20rem)] md:right-[calc(5rem+22rem)] lg:right-[calc(5rem+24rem)] text-white bg-black bg-opacity-80 p-2 sm:p-4 rounded-lg z-[1000] max-w-[280px] sm:max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-xs sm:text-sm hidden"
+    ></div>
+
+    <!-- AI Info Panel - Responsive positioning -->
+    <div
+      class="ai-info fixed top-2 right-2 sm:top-5 sm:right-5 text-white bg-black bg-opacity-80 p-2 sm:p-4 rounded-lg z-[1000] max-w-[280px] sm:max-w-xs shadow-xl border border-white border-opacity-10 backdrop-blur-sm text-xs sm:text-sm"
+    ></div>
 
     <script>
       async function generateMultiplePlants(quantity) {
@@ -145,9 +177,10 @@
         }
       }
 
-      // Toggle dropdown controls
+      // Toggle dropdown controls with responsive height
       function toggleControls() {
         const dropdown = document.getElementById("controls-dropdown");
+        const content = document.getElementById("controls-content");
         const arrow = document.getElementById("controls-arrow");
         const isOpen =
           dropdown.style.maxHeight !== "0px" && dropdown.style.maxHeight !== "";
@@ -158,12 +191,60 @@
           dropdown.style.opacity = "0";
           arrow.style.transform = "rotate(0deg)";
         } else {
+          // Calculate responsive max height based on screen size
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+
+          let maxHeight;
+          if (viewportWidth < 640) {
+            // Mobile (sm breakpoint)
+            maxHeight = Math.min(350, viewportHeight * 0.6); // Max 60% of screen height or 350px
+          } else if (viewportWidth < 768) {
+            // Tablet (md breakpoint)
+            maxHeight = Math.min(400, viewportHeight * 0.65); // Max 65% of screen height or 400px
+          } else {
+            // Desktop
+            maxHeight = Math.min(500, viewportHeight * 0.7); // Max 70% of screen height or 500px
+          }
+
           // Open dropdown
-          dropdown.style.maxHeight = "300px"; // Increased height to show all content
+          dropdown.style.maxHeight = maxHeight + "px";
           dropdown.style.opacity = "1";
           arrow.style.transform = "rotate(180deg)";
+
+          // Set scroll height for content container
+          content.style.maxHeight = maxHeight - 16 + "px"; // Subtract padding
         }
       }
+
+      // Recalculate dropdown height on window resize
+      window.addEventListener("resize", function () {
+        const dropdown = document.getElementById("controls-dropdown");
+        const content = document.getElementById("controls-content");
+        const isOpen =
+          dropdown.style.maxHeight !== "0px" && dropdown.style.maxHeight !== "";
+
+        if (isOpen) {
+          // Recalculate responsive max height
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+
+          let maxHeight;
+          if (viewportWidth < 640) {
+            // Mobile
+            maxHeight = Math.min(350, viewportHeight * 0.6);
+          } else if (viewportWidth < 768) {
+            // Tablet
+            maxHeight = Math.min(400, viewportHeight * 0.65);
+          } else {
+            // Desktop
+            maxHeight = Math.min(500, viewportHeight * 0.7);
+          }
+
+          dropdown.style.maxHeight = maxHeight + "px";
+          content.style.maxHeight = maxHeight - 16 + "px";
+        }
+      });
     </script>
 
     <!-- Core libraries -->

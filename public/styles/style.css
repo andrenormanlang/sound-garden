@@ -110,3 +110,164 @@ canvas {
 .plant-info p {
   margin: 5px 0;
 }
+
+/* Dropdown button styles */
+.btn-dropdown {
+  font-size: 0.875rem;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.btn-dropdown.active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+@media (hover: hover) {
+  .btn-dropdown:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Active states for mode buttons */
+.creator-mode .btn-dropdown[onclick*="toggleCreatorMode"],
+.eraser-mode .btn-dropdown[onclick*="toggleEraserMode"] {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 474px) {
+  .controls {
+    bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    left: calc(0.5rem + env(safe-area-inset-left, 0px)) !important;
+    right: calc(0.5rem + env(safe-area-inset-right, 0px)) !important;
+    flex-wrap: wrap;
+    gap: 0.25rem !important;
+  }
+
+  .info-panel {
+    top: calc(0.5rem + env(safe-area-inset-top, 0px)) !important;
+    left: calc(0.5rem + env(safe-area-inset-left, 0px)) !important;
+    max-width: calc(100vw - 1rem) !important;
+  }
+
+  .weather-info,
+  .ai-info {
+    top: calc(0.5rem + env(safe-area-inset-top, 0px)) !important;
+    right: calc(0.5rem + env(safe-area-inset-right, 0px)) !important;
+    max-width: calc(100vw - 1rem) !important;
+  }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  .btn {
+    min-height: 44px; /* Apple's recommended touch target size */
+    touch-action: manipulation;
+  }
+
+  .info-panel button {
+    min-height: 44px;
+    padding: 0.75rem !important;
+  }
+}
+
+/* Landscape orientation adjustments for mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .controls {
+    bottom: 0.25rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .info-panel {
+    top: 0.25rem !important;
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .weather-info,
+  .ai-info {
+    top: 0.25rem !important;
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Enhanced animations for better UX */
+.btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.info-panel,
+.weather-info,
+.ai-info {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+/* High DPI screen optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .info-panel,
+  .weather-info,
+  .ai-info {
+    transition: none;
+  }
+
+  .spinner::before {
+    animation: none;
+    content: "⠋";
+  }
+}
+
+/* Custom scrollbar styles for dropdown */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #facc15 #374151; /* Yellow thumb, gray track */
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.5); /* Gray track with transparency */
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(250, 204, 21, 0.8); /* Yellow thumb with transparency */
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(250, 204, 21, 1); /* Solid yellow on hover */
+}
+
+/* Smooth scroll behavior */
+#controls-content {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar on very small screens to save space */
+@media (max-width: 475px) {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 3px;
+  }
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test Functions</title>
+  </head>
+  <body>
+    <h1>Test Rainbow and Weather Functions</h1>
+    <button onclick="testRainbow()">Test Rainbow</button>
+    <button onclick="testWeather()">Test Weather</button>
+    <div id="result"></div>
+
+    <script>
+      async function testRainbow() {
+        try {
+          const response = await fetch("/api/generate-rainbow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          const data = await response.json();
+          document.getElementById("result").innerHTML =
+            "<h3>Rainbow Response:</h3><pre>" +
+            JSON.stringify(data, null, 2) +
+            "</pre>";
+        } catch (error) {
+          document.getElementById("result").innerHTML =
+            "<h3>Rainbow Error:</h3><p>" + error.message + "</p>";
+        }
+      }
+
+      async function testWeather() {
+        try {
+          const response = await fetch("/api/generate-weather", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          const data = await response.json();
+          document.getElementById("result").innerHTML =
+            "<h3>Weather Response:</h3><pre>" +
+            JSON.stringify(data, null, 2) +
+            "</pre>";
+        } catch (error) {
+          document.getElementById("result").innerHTML =
+            "<h3>Weather Error:</h3><p>" + error.message + "</p>";
+        }
+      }
+    </script>
+  </body>
+</html>

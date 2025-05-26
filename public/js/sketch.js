@@ -16,13 +16,32 @@ let aiPlantBtn;
 let aiInfo;
 let rainbowPlantBtn; // Button for generating rainbows
 
+// Responsive scaling variables
+let scaleFactor = 1;
+let GROUND_HEIGHT;
+
 // Initialize UI elements after window loads
 window.addEventListener("load", () => {
-  aiPlantBtn = document.querySelector(".controls .btn:nth-child(3)"); // The AI Plant button
+  aiPlantBtn = document.querySelector(
+    'button[onclick="generateExoticPlant()"]'
+  ); // The AI Plant button
   aiInfo = document.querySelector(".ai-info");
-  // Assuming the rainbow button will be the 4th button in the main controls div
-  rainbowPlantBtn = document.querySelector(".controls .btn:nth-child(4)");
+  // Get the rainbow button by its onclick attribute
+  rainbowPlantBtn = document.querySelector(
+    'button[onclick="generatePsychedelicRainbow()"]'
+  );
+
+  // Calculate initial responsive values
+  updateResponsiveValues();
 });
+
+// Helper function to update responsive values based on screen size
+function updateResponsiveValues() {
+  // Scale based on screen width
+  scaleFactor = Math.min(1, windowWidth / 1024);
+  // Ground height is 25% of screen height or minimum 220px
+  GROUND_HEIGHT = Math.max(220, windowHeight * 0.25);
+}
 
 // Helper function for loading state
 function setLoadingState(button, isLoading) {
@@ -38,9 +57,30 @@ function setLoadingState(button, isLoading) {
 let soundEnabled = true; // Global sound toggle state
 
 // Ground and environment variables
-const GROUND_HEIGHT = 250; // Increased ground height significantly
+const baseGroundHeight = 250;
 let grassHeight = [];
 let grassWind = 0;
+
+// Responsive design helper functions
+function getResponsiveMarginX() {
+  return width < 768 ? 30 : 50;
+}
+
+function getResponsiveMarginY() {
+  return width < 768 ? 80 : 100;
+}
+
+function getResponsiveMinDistance() {
+  return width < 768 ? 35 : 50;
+}
+
+function getResponsiveMaxDistance() {
+  return width < 768 ? 120 : 150;
+}
+
+function getResponsiveFontSize() {
+  return width < 768 ? 16 : 24;
+}
 
 // Plant lifecycle states
 const LIFECYCLE_STATES = {
@@ -72,7 +112,7 @@ async function initializeAudio() {
 }
 
 // Sound toggle functionality
-function toggleSound() {
+window.toggleSound = function () {
   soundEnabled = !soundEnabled;
 
   // Save preference to localStorage
@@ -138,7 +178,7 @@ function toggleSound() {
   }
 
   console.log(`Sound ${soundEnabled ? "enabled" : "disabled"}`);
-}
+};
 
 function updateSoundButtonState() {
   const soundButton = document.querySelector(".sound-toggle-btn");
@@ -319,6 +359,8 @@ window.generateExoticPlant = async function () {
 
 // Function to generate and display a psychedelic rainbow
 window.generatePsychedelicRainbow = async function () {
+  console.log("Rainbow button clicked!");
+
   if (Tone.context.state !== "running") {
     await Tone.start();
   }
@@ -329,6 +371,7 @@ window.generatePsychedelicRainbow = async function () {
   setLoadingState(rainbowPlantBtn, true);
 
   try {
+    console.log("Fetching rainbow data...");
     const response = await fetch("/api/generate-rainbow", {
       method: "POST",
       headers: {
@@ -447,7 +490,7 @@ class PsychedelicRainbow {
         sustain: 0.8,
         release: 2.0,
       },
-      volume: -12,
+      volume: -6,
     });
 
     this.reverb = new Tone.Reverb(durationSeconds * 0.5).toDestination();
@@ -473,7 +516,25 @@ class PsychedelicRainbow {
     const angle = atan2(dy, dx);
     const inArcArea = angle >= PI * 0.05 && angle <= PI * 0.95; // Expanded range for better detection
 
-    return withinRadius && aboveGround && inArcArea;
+    const isOver = withinRadius && aboveGround && inArcArea;
+
+    // Log hover detection occasionally for debugging
+    if (frameCount % 30 === 0 && isOver) {
+      console.log("Rainbow hover detected:", {
+        mouseX,
+        mouseY,
+        centerX: this.centerX,
+        centerY: this.centerY,
+        distance: distance.toFixed(1),
+        minRadius: this.minRadius.toFixed(1),
+        maxRadius: this.maxRadius.toFixed(1),
+        withinRadius,
+        aboveGround,
+        inArcArea,
+      });
+    }
+
+    return isOver;
   }
 
   // Start playing sound on hover
@@ -497,14 +558,25 @@ class PsychedelicRainbow {
     this.isHovered = this.isMouseOver(mouseX, mouseY);
 
     if (this.isHovered && !wasHovered) {
+      console.log("Rainbow hover started - attempting to play sound");
+      console.log("soundEnabled:", soundEnabled);
+      console.log("soundPlaying:", this.soundPlaying);
       this.startHoverSound();
     } else if (!this.isHovered && wasHovered) {
+      console.log("Rainbow hover ended - stopping sound");
       this.stopHoverSound();
     }
   }
 
   playHarmonicSound() {
-    if (!soundEnabled) return;
+    if (!soundEnabled) {
+      console.log("Sound disabled, not playing rainbow sound");
+      return;
+    }
+
+    console.log("Playing harmonic rainbow sound");
+    console.log("Tone.context.state:", Tone.context.state);
+
     const now = Tone.now();
 
     // Ensure soundProperties and its nested properties exist
@@ -520,6 +592,9 @@ class PsychedelicRainbow {
       this.data.soundProperties && this.data.soundProperties.durationSeconds
         ? this.data.soundProperties.durationSeconds * 0.75
         : 7.5;
+
+    console.log("Sound parameters:", { fundamental, harmonicity, duration });
+    console.log("Synth volume:", this.synth.volume.value);
 
     const harmonicIntervals = [1, 2, 1.5, 3, 4, 1.25, 5, 1.75];
 
@@ -539,6 +614,8 @@ class PsychedelicRainbow {
       (a, b) => a - b
     );
 
+    console.log("Playing frequencies:", uniqueFrequencies);
+
     uniqueFrequencies.forEach((freq, index) => {
       const detuneFactor = 0.0005 + ((harmonicity - 1.0) / 2.0) * 0.0195;
       const randomDetune = (Math.random() - 0.5) * 2 * detuneFactor;
@@ -547,6 +624,13 @@ class PsychedelicRainbow {
       if (harmonicity < 1.5) {
         velocity *= 0.7 + (harmonicity - 1.0) * 0.6;
       }
+
+      console.log(
+        `Triggering note ${index}: freq=${finalFreq.toFixed(
+          2
+        )}Hz, velocity=${velocity.toFixed(2)}`
+      );
+
       this.synth.triggerAttackRelease(
         finalFreq,
         duration,
@@ -644,16 +728,14 @@ class PsychedelicRainbow {
         stroke(255, 0, 0, max(0, currentAlpha)); // Default to red
       }
 
-      // Draw arc that extends behind the ground for a more natural rainbow appearance
-      const startAngle = PI * 0.8; // Start angle extending behind left side
-      const endAngle = PI * 2.2; // End angle extending behind right side
-      arc(0, 0, bandRadius * 2, bandRadius * 2, startAngle, endAngle);
+      // Draw semicircle arc for rainbow shape
+      arc(0, 0, bandRadius * 2, bandRadius * 2, PI, TWO_PI);
 
       // Add subtle inner glow effect on hover
       if (this.isHovered) {
         strokeWeight(arcThickness * 0.3);
         stroke(255, 255, 255, currentAlpha * 0.2); // Reduced from 0.3 for subtlety
-        arc(0, 0, bandRadius * 2, bandRadius * 2, startAngle, endAngle);
+        arc(0, 0, bandRadius * 2, bandRadius * 2, PI, TWO_PI);
       }
     }
 
@@ -1728,14 +1810,26 @@ function drawWeather() {
 }
 
 // Function to trigger weather events
-async function generateWeatherEvent() {
-  const weatherBtn = document.querySelector(".weather-btn");
+window.generateWeatherEvent = async function () {
+  console.log("Weather button clicked!");
+
+  const weatherBtn = document.querySelector(
+    'button[onclick="generateWeatherEvent()"]'
+  );
   const weatherInfo = document.querySelector(".weather-info");
+
+  console.log("Weather button found:", !!weatherBtn);
+  console.log("Weather info panel found:", !!weatherInfo);
 
   try {
     setLoadingState(weatherBtn, true);
     weatherInfo.classList.add("loading");
 
+    // Show the weather info panel
+    weatherInfo.classList.remove("hidden");
+    console.log("Weather panel should now be visible");
+
+    console.log("Fetching weather data...");
     const response = await fetch("/api/generate-weather", {
       method: "POST",
       headers: {
@@ -1748,6 +1842,7 @@ async function generateWeatherEvent() {
     }
 
     const weatherData = await response.json();
+    console.log("Weather data received:", weatherData);
 
     // End current weather if it exists
     if (currentWeather && currentWeather.active) {
@@ -1760,14 +1855,14 @@ async function generateWeatherEvent() {
     // Update info panel with weather description
     const infoHTML = `
       <h4>🌦️ Current Weather</h4>
-      <div class="weather-info">
+      <div class="weather-details">
         <p><strong>${weatherData.name}</strong></p>
         <p>${weatherData.description}</p>
         <p>Impact: ${weatherData.impact}</p>
         <p>Duration: ${weatherData.duration} seconds</p>
       </div>
     `;
-    document.querySelector(".weather-info").innerHTML = infoHTML;
+    weatherInfo.innerHTML = infoHTML;
   } catch (error) {
     console.error("Error generating weather:", error);
     alert("Error generating weather. Please try again.");
@@ -1775,10 +1870,10 @@ async function generateWeatherEvent() {
     setLoadingState(weatherBtn, false);
     weatherInfo.classList.remove("loading");
   }
-}
+};
 
 // Function to generate an exotic plant using AI
-async function generateExoticPlant() {
+window.generateExoticPlant = async function () {
   const aiPlantBtn = document.querySelector(
     'button[onclick="generateExoticPlant()"]'
   );
@@ -1954,7 +2049,7 @@ async function generateExoticPlant() {
     if (aiPlantBtn) setLoadingState(aiPlantBtn, false);
     if (aiInfo) aiInfo.classList.remove("loading");
   }
-}
+};
 
 // async function generateMultiplePlants(quantity) {
 //   const button = document.querySelector(
@@ -1993,20 +2088,20 @@ async function generateExoticPlant() {
 // }
 
 // Simplify addRandomPlant function
-function addRandomPlant() {
+window.addRandomPlant = function () {
   if (plants.length < 1000) {
     const flowerTypes = Object.keys(FLOWER_TYPES);
 
-    // Define safe margins
-    const marginX = 50;
-    const marginY = 100;
+    // Define responsive margins
+    const marginX = getResponsiveMarginX();
+    const marginY = getResponsiveMarginY();
 
     // Generate a random position within safe margins
     let x = random(marginX, width - marginX);
-    let y = height - marginY + random(-30, 30); // Keep plants near ground level with some variation
+    let y = height - marginY + random(-30 * scaleFactor, 30 * scaleFactor); // Keep plants near ground level with some variation
 
     // Check if position is far enough from existing plants
-    const minDistance = 50; // Minimum distance between plants
+    const minDistance = getResponsiveMinDistance(); // Responsive minimum distance
     let validPosition = true;
 
     // Try to find a spot that's not too close to other plants (check up to 20 existing plants randomly)
@@ -2024,15 +2119,15 @@ function addRandomPlant() {
     // If position is not valid, adjust it slightly
     if (!validPosition && plants.length > 10) {
       x = random(marginX, width - marginX);
-      y = height - marginY + random(-40, 40);
+      y = height - marginY + random(-40 * scaleFactor, 40 * scaleFactor);
     }
 
     let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
     plants.push(new Plant(x, y, randomType));
   }
-}
+};
 
-function resetGarden() {
+window.resetGarden = function () {
   plants = [];
   particles = [];
 
@@ -2077,16 +2172,20 @@ function resetGarden() {
       plants.push(plant);
     }
   }
-}
+};
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   colorMode(HSB, 360, 100, 100, 100);
 
-  // Initialize grass
-  for (let i = 0; i < width; i += 4) {
+  // Update responsive values after canvas creation
+  updateResponsiveValues();
+
+  // Initialize grass with responsive spacing
+  const grassSpacing = width < 768 ? 6 : 4;
+  for (let i = 0; i < width; i += grassSpacing) {
     grassHeight.push({
-      height: random(20, 40),
+      height: random(15, 35) * scaleFactor,
       offset: random(TWO_PI),
       speed: random(0.02, 0.06),
     });
@@ -2094,9 +2193,9 @@ function setup() {
 
   // Show a message to click anywhere to start
   textAlign(CENTER, CENTER);
-  textSize(24);
+  textSize(getResponsiveFontSize());
   fill(0);
-  text("Click anywhere to start the garden", width / 2, height / 2);
+  text("Tap anywhere to start the garden", width / 2, height / 2);
 
   // Initialize audio and plants only after first user interaction
   const startInteraction = async () => {
@@ -2122,48 +2221,61 @@ function drawGrass() {
   fill(110, 35, 25);
   rect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT * 0.3);
 
-  // Add ground texture/detail
-  for (let i = 0; i < width; i += 20) {
-    for (let j = 0; j < GROUND_HEIGHT * 0.3; j += 15) {
+  // Add ground texture/detail (scaled based on screen size)
+  const detailSpacing = Math.max(10, 20 * scaleFactor);
+  for (let i = 0; i < width; i += detailSpacing) {
+    for (let j = 0; j < GROUND_HEIGHT * 0.3; j += detailSpacing * 0.75) {
       fill(115, 38, 28, random(10, 20));
       ellipse(
-        i + random(-5, 5),
-        height - GROUND_HEIGHT + j + random(-5, 5),
-        random(5, 15)
+        i + random(-3, 3) * scaleFactor,
+        height - GROUND_HEIGHT + j + random(-3, 3) * scaleFactor,
+        random(3, 8) * scaleFactor
       );
     }
   }
 
-  // Update grass wind effect
+  // Update grass wind effect with adaptative strength
   grassWind = noise(frameCount * 0.01) * 2 - 1;
   if (currentWeather && currentWeather.active) {
     grassWind += windForce;
   }
 
-  // Draw grass blades
+  // Draw grass blades with improved responsiveness
   for (let i = 0; i < grassHeight.length; i++) {
-    const x = i * 4;
+    const x = i * (width < 768 ? 6 : 4); // Adaptive spacing
     const grass = grassHeight[i];
+
+    // Scale grass size based on screen size
+    const baseHeight = grass.height * scaleFactor;
 
     // Make height dynamic using noise based on position and time
     const dynamicHeight = map(
       noise(x * 0.02, frameCount * 0.001),
       0,
       1,
-      grass.height * 0.9, // Increased minimum height
-      grass.height * 1.5 // Increased maximum height for taller grass
+      baseHeight * 0.9,
+      baseHeight * 1.3
     );
 
-    const windOffset = sin(frameCount * grass.speed + grass.offset) * 15; // Increased wind effect
-    const totalOffset = windOffset + grassWind * 20;
+    // Scale wind effect based on screen size
+    const windOffset =
+      sin(frameCount * grass.speed + grass.offset) * (10 * scaleFactor);
+    const totalOffset = windOffset + grassWind * (15 * scaleFactor);
 
-    // Gradient for grass color
+    // Gradient for grass color with adaptive alpha
     const grassColor = color(90, 80, 60);
-    const grassAlpha = map(dynamicHeight, 20, 40, 255, 200);
+    const grassAlpha = map(
+      dynamicHeight,
+      baseHeight * 0.5,
+      baseHeight,
+      255,
+      200
+    );
     grassColor.setAlpha(grassAlpha);
 
+    // Draw grass blade with adaptive stroke weight
     stroke(grassColor);
-    strokeWeight(2);
+    strokeWeight(Math.max(1, 2 * scaleFactor));
     line(
       x,
       height - GROUND_HEIGHT,
@@ -2270,128 +2382,111 @@ async function mousePressed() {
 }
 
 function keyPressed() {
-  if (key === "2") {
-    // Toggle random plant creator mode
+  // Clear garden with 'C' key
+  if (key === "c" || key === "C") {
+    resetGarden();
+  }
+  // Toggle sound with 'M' key
+  else if (key === "m" || key === "M") {
+    toggleSound();
+  }
+  // Toggle creator mode - random plants with '2' key
+  else if (key === "2") {
     creatorMode = !creatorMode;
     plantType = "random";
     eraserMode = false;
-    document.body.style.cursor = creatorMode ? "crosshair" : "default";
-  } else if (key === "3") {
-    // Toggle AI plant creator mode
+    cursor(creatorMode ? CROSS : ARROW);
+    // Update button state
+    const button = document.querySelector(
+      'button[onclick="toggleCreatorMode()"]'
+    );
+    if (button) {
+      if (creatorMode) {
+        button.classList.add("bg-opacity-100");
+      } else {
+        button.classList.remove("bg-opacity-100");
+      }
+    }
+  }
+  // Toggle creator mode - AI plants with '3' key
+  else if (key === "3") {
     creatorMode = !creatorMode;
     plantType = "ai";
     eraserMode = false;
-    document.body.style.cursor = creatorMode ? "crosshair" : "default";
-  } else if (key === "e" || key === "E") {
-    // Toggle eraser mode
-    eraserMode = !eraserMode;
-    creatorMode = false;
-    document.body.style.cursor = eraserMode ? "crosshair" : "default";
-  } else if (key === "c" || key === "C") {
-    // Clear all plants
-    plants = [];
-    particles = [];
-    // Also clear any ongoing sound synths
-    if (!soundEnabled) {
-      Object.values(synths).forEach((synth) => {
-        if (synth && synth.dispose) {
-          synth.releaseAll();
-        }
-      });
-    }
-  } else if (key === "m" || key === "M") {
-    // Toggle sound on/off
-    toggleSound();
-  }
-}
-
-// Simplify addRandomPlant function
-function addRandomPlant() {
-  if (plants.length < 1000) {
-    const flowerTypes = Object.keys(FLOWER_TYPES);
-
-    // Define safe margins
-    const marginX = 50;
-    const marginY = 100;
-
-    // Generate a random position within safe margins
-    let x = random(marginX, width - marginX);
-    let y = height - marginY + random(-30, 30); // Keep plants near ground level with some variation
-
-    // Check if position is far enough from existing plants
-    const minDistance = 50; // Minimum distance between plants
-    let validPosition = true;
-
-    // Try to find a spot that's not too close to other plants (check up to 20 existing plants randomly)
-    const plantsToCheck = Math.min(plants.length, 20);
-    for (let i = 0; i < plantsToCheck; i++) {
-      const randomIndex = Math.floor(random(plants.length));
-      const existingPlant = plants[randomIndex];
-      const d = dist(x, y, existingPlant.x, existingPlant.y);
-      if (d < minDistance) {
-        validPosition = false;
-        break;
+    cursor(creatorMode ? CROSS : ARROW);
+    // Update button state
+    const button = document.querySelector(
+      'button[onclick="toggleCreatorMode()"]'
+    );
+    if (button) {
+      if (creatorMode) {
+        button.classList.add("bg-opacity-100");
+      } else {
+        button.classList.remove("bg-opacity-100");
       }
     }
-
-    // If position is not valid, adjust it slightly
-    if (!validPosition && plants.length > 10) {
-      x = random(marginX, width - marginX);
-      y = height - marginY + random(-40, 40);
-    }
-
-    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-    plants.push(new Plant(x, y, randomType));
+  }
+  // Toggle eraser mode with 'E' key
+  else if (key === "e" || key === "E") {
+    toggleEraserMode();
   }
 }
 
-function resetGarden() {
-  plants = [];
-  particles = [];
+// Global function to toggle creator mode (called from HTML buttons)
+window.toggleCreatorMode = function () {
+  creatorMode = !creatorMode;
+  plantType = "random"; // Default to random plants for the toggle button
+  eraserMode = false;
+  cursor(creatorMode ? CROSS : ARROW);
 
-  const flowerTypes = Object.keys(FLOWER_TYPES);
-  const marginX = 50;
-  const marginY = 100;
-  const minPlantDistance = 80;
-
-  // Create plants in layers for depth
-  for (let layer = 0; layer < 4; layer++) {
-    let plantsInLayer = map(layer, 0, 3, 6, 2); // More plants in front, fewer in back
-
-    for (let i = 0; i < plantsInLayer; i++) {
-      // Try to find a position not too close to other plants
-      let attempts = 0;
-      let validPosition = false;
-      let x, y;
-
-      while (!validPosition && attempts < 10) {
-        x = random(marginX, width - marginX);
-        y = height - marginY + random(-30, 30); // Near ground level
-
-        validPosition = true;
-
-        // Check distance to other plants
-        for (let j = 0; j < plants.length; j++) {
-          const d = dist(x, y, plants[j].x, plants[j].y);
-          if (d < minPlantDistance) {
-            validPosition = false;
-            break;
-          }
-        }
-
-        attempts++;
-      }
-
-      let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-      let plant = new Plant(x, y, randomType);
-
-      // Add depth offset based on layer
-      plant.depthOffset = layer * 25; // 0-75 depth range
-      plants.push(plant);
+  // Update button state
+  const button = document.querySelector(
+    'button[onclick="toggleCreatorMode()"]'
+  );
+  if (button) {
+    if (creatorMode) {
+      button.classList.add("bg-opacity-100");
+      button.classList.remove("bg-opacity-50");
+    } else {
+      button.classList.remove("bg-opacity-100");
+      button.classList.add("bg-opacity-50");
     }
   }
-}
 
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-}
+  // If creator mode is enabled, disable eraser mode button
+  const eraserButton = document.querySelector(
+    'button[onclick="toggleEraserMode()"]'
+  );
+  if (eraserButton) {
+    eraserButton.classList.remove("bg-opacity-100");
+    eraserButton.classList.add("bg-opacity-50");
+  }
+};
+
+// Global function to toggle eraser mode (called from HTML buttons)
+window.toggleEraserMode = function () {
+  eraserMode = !eraserMode;
+  creatorMode = false;
+  cursor(eraserMode ? CROSS : ARROW);
+
+  // Update button state
+  const button = document.querySelector('button[onclick="toggleEraserMode()"]');
+  if (button) {
+    if (eraserMode) {
+      button.classList.add("bg-opacity-100");
+      button.classList.remove("bg-opacity-50");
+    } else {
+      button.classList.remove("bg-opacity-100");
+      button.classList.add("bg-opacity-50");
+    }
+  }
+
+  // If eraser mode is enabled, disable creator mode button
+  const creatorButton = document.querySelector(
+    'button[onclick="toggleCreatorMode()"]'
+  );
+  if (creatorButton) {
+    creatorButton.classList.remove("bg-opacity-100");
+    creatorButton.classList.add("bg-opacity-50");
+  }
+};
