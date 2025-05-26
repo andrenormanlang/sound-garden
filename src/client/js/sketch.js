@@ -10,11 +10,13 @@ let eraserMode = false;
 let creatorMode = false; // Toggle for creation mode
 let plantType = "random"; // Type of plant to create (random or ai)
 let activeRainbows = []; // Array to store active rainbow data and objects
+let activeAuroras = []; // Array to store active aurora data and objects
 
 // UI elements
 let aiPlantBtn;
 let aiInfo;
 let rainbowPlantBtn; // Button for generating rainbows
+let auroraPlantBtn; // Button for generating aurora borealis
 
 // Initialize UI elements after window loads
 window.addEventListener("load", () => {
@@ -22,6 +24,8 @@ window.addEventListener("load", () => {
   aiInfo = document.querySelector(".ai-info");
   // Assuming the rainbow button will be the 4th button in the main controls div
   rainbowPlantBtn = document.querySelector(".controls .btn:nth-child(4)");
+  // Assuming the aurora button will be the 5th button in the main controls div
+  auroraPlantBtn = document.querySelector(".controls .btn:nth-child(5)");
 });
 
 // Helper function for loading state
@@ -387,6 +391,75 @@ window.generatePsychedelicRainbow = async function () {
   }
 };
 
+// Function to generate and display a psychedelic aurora borealis
+window.generatePsychedelicAurora = async function () {
+  if (Tone.context.state !== "running") {
+    await Tone.start();
+  }
+  if (!auroraPlantBtn) {
+    console.error("Aurora button not initialized!");
+    return;
+  }
+  setLoadingState(auroraPlantBtn, true);
+
+  try {
+    console.log("Fetching aurora data...");
+    const response = await fetch("/api/generate-aurora", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.error || "Failed to generate aurora");
+      return;
+    }
+
+    const auroraData = await response.json();
+    console.log("Psychedelic Aurora Data:", auroraData);
+
+    // Ensure visualProperties and its nested properties exist before accessing
+    if (auroraData.visualProperties && auroraData.visualProperties.colors) {
+      console.log("Aurora Colors from AI:", auroraData.visualProperties.colors);
+    } else {
+      console.warn(
+        "Visual properties or colors missing in auroraData:",
+        auroraData
+      );
+      // Provide default colors or handle error appropriately
+      if (!auroraData.visualProperties) auroraData.visualProperties = {};
+      if (!auroraData.visualProperties.colors)
+        auroraData.visualProperties.colors = [];
+    }
+
+    activeAuroras.push(new PsychedelicAurora(auroraData));
+
+    // Update UI or info panel if needed
+    const infoHTML = `
+      <h4>🌌 Psychedelic Aurora Generated!</h4>
+      <div class="aurora-info">
+        <p><strong>Name:</strong> ${auroraData.name || "N/A"}</p>
+        <p>${auroraData.description || "No description."}</p>
+        <p><strong>Soundscape:</strong> ${
+          auroraData.soundProperties
+            ? auroraData.soundProperties.soundscapeName
+            : "N/A"
+        }</p>
+      </div>
+    `;
+    // Prepend to aiInfo or a dedicated aurora info panel
+    const currentInfo = document.querySelector(".ai-info").innerHTML;
+    document.querySelector(".ai-info").innerHTML = infoHTML + currentInfo;
+  } catch (error) {
+    console.error("Error generating psychedelic aurora:", error);
+    alert("Error generating aurora. Please check console.");
+  } finally {
+    setLoadingState(auroraPlantBtn, false);
+  }
+};
+
 class PsychedelicRainbow {
   constructor(data) {
     this.data = data; // Contains visualProperties and soundProperties
@@ -424,10 +497,24 @@ class PsychedelicRainbow {
 
     // Initialize sound
     // Ensure soundProperties and its nested properties exist
-    const oscillatorType =
+    const validOscillatorTypes = ["sine", "triangle", "square", "sawtooth"];
+    let requestedOscillatorType =
       this.data.soundProperties && this.data.soundProperties.oscillatorType
         ? this.data.soundProperties.oscillatorType
         : "sine";
+
+    // Validate oscillator type and fallback to sine if invalid
+    const oscillatorType = validOscillatorTypes.includes(
+      requestedOscillatorType
+    )
+      ? requestedOscillatorType
+      : "sine";
+
+    if (requestedOscillatorType !== oscillatorType) {
+      console.warn(
+        `Invalid oscillator type '${requestedOscillatorType}', using 'sine' instead`
+      );
+    }
     const durationSeconds =
       this.data.soundProperties && this.data.soundProperties.durationSeconds
         ? this.data.soundProperties.durationSeconds
@@ -573,125 +660,146 @@ class PsychedelicRainbow {
     const durationSeconds =
       this.data.soundProperties && this.data.soundProperties.durationSeconds
         ? this.data.soundProperties.durationSeconds
-        : 10;
+        : 30;
 
     const elapsedTime = (millis() - this.startTime) / 1000;
     const progress = elapsedTime / durationSeconds;
     if (progress > 1) return;
 
-    // Use traditional rainbow colors or AI-generated ones
+    // Use AI-generated colors or default aurora colors
     const colors =
       this.data.visualProperties &&
       this.data.visualProperties.colors &&
       this.data.visualProperties.colors.length > 0
         ? this.data.visualProperties.colors
-        : this.defaultRainbowColors;
+        : this.defaultAuroraColors;
 
-    const animationStyle =
-      this.data.visualProperties && this.data.visualProperties.animationStyle
-        ? this.data.visualProperties.animationStyle
-        : "static";
-
-    // Rainbow properties - more translucent for ethereal appearance
-    const baseAlpha = 120 * (1 - progress * 0.3); // More translucent, fade out slower
-    const arcThickness = 25; // Thicker arcs for better rainbow appearance
-    const numBands = colors.length;
+    // Base alpha with gradual fade
+    const baseAlpha = 150 * (1 - progress * 0.4) * this.intensity;
 
     push();
 
-    // Apply animation effects
-    if (animationStyle === "pulsating") {
-      const pulse = 0.9 + sin(elapsedTime * PI * 0.8) * 0.1;
-      scale(pulse);
-    } else if (animationStyle === "breathing") {
-      const breath = 0.95 + sin(elapsedTime * PI * 0.4) * 0.05;
-      scale(breath);
-    } else if (animationStyle === "drifting_waves") {
-      const drift = sin(elapsedTime * 0.6) * 10;
-      translate(drift, 0);
+    // Apply flow pattern transformations
+    if (this.flowPattern === "breathing_veils") {
+      const breath = 0.95 + sin(elapsedTime * PI * 0.3) * 0.05;
+      scale(1, breath);
+    } else if (this.flowPattern === "spiral_vortex") {
+      translate(width / 2, height / 2);
+      rotate(elapsedTime * 0.1);
+      translate(-width / 2, -height / 2);
     }
 
-    translate(this.centerX, this.centerY);
-
-    // Draw rainbow bands from outer to inner (red on outside, violet on inside)
-    for (let i = 0; i < numBands; i++) {
-      const bandRadius = this.maxRadius - i * arcThickness;
-      const colorIndex = i % colors.length;
+    // Draw aurora waves
+    for (let waveIndex = 0; waveIndex < this.waves.length; waveIndex++) {
+      const wave = this.waves[waveIndex];
+      const colorIndex = waveIndex % colors.length;
       const color = colors[colorIndex];
 
       let currentAlpha = baseAlpha;
 
-      // Animation effects on alpha
-      if (animationStyle === "shimmering") {
-        currentAlpha *= 0.7 + noise(elapsedTime * 2 + i * 0.5) * 0.3;
-      } else if (animationStyle === "pulsating") {
-        currentAlpha *= 0.8 + sin(elapsedTime * PI * 0.6 + i * 0.4) * 0.2;
+      // Apply shimmer effects
+      if (this.flowPattern === "rippling_sheets") {
+        currentAlpha *= 0.7 + noise(elapsedTime * 2 + waveIndex * 0.5) * 0.3;
+      } else if (this.flowPattern === "dancing_curtains") {
+        currentAlpha *=
+          0.8 +
+          sin(elapsedTime * PI * this.shimmerSpeed + waveIndex * 0.6) * 0.2;
       }
 
-      // Highlight on hover - subtle increase to maintain translucency
+      // Enhance on hover
       if (this.isHovered) {
-        currentAlpha *= 1.15; // Reduced from 1.3 for more subtle effect
+        currentAlpha *= 1.2;
       }
 
-      // Draw the rainbow band as a thick arc
+      // Set stroke color
       noFill();
-      strokeWeight(arcThickness);
-      strokeCap(ROUND);
-
       if (Array.isArray(color) && color.length >= 3) {
         stroke(color[0], color[1], color[2], max(0, currentAlpha));
       } else {
-        stroke(255, 0, 0, max(0, currentAlpha)); // Default to red
+        stroke(0, 255, 100, max(0, currentAlpha)); // Default to green
       }
+      strokeWeight(3 + waveIndex * 0.5);
 
-      // Draw semicircle arc for rainbow shape
-      arc(0, 0, bandRadius * 2, bandRadius * 2, PI, TWO_PI);
+      // Draw flowing wave using beginShape/endShape for smooth curves
+      beginShape();
+      noFill();
 
-      // Add subtle inner glow effect on hover
-      if (this.isHovered) {
-        strokeWeight(arcThickness * 0.3);
-        stroke(255, 255, 255, currentAlpha * 0.2); // Reduced from 0.3 for subtlety
-        arc(0, 0, bandRadius * 2, bandRadius * 2, PI, TWO_PI);
+      for (let x = 0; x <= width; x += 10) {
+        // Create flowing wave pattern
+        let y = wave.yOffset;
+
+        // Add primary wave motion
+        y += sin(x * wave.frequency + wave.phase) * wave.amplitude;
+
+        // Add secondary motion for more organic feel
+        y +=
+          sin(x * wave.frequency * 2 + wave.phase * 1.5) *
+          (wave.amplitude * 0.3);
+
+        // Add shimmer effect
+        y += sin(x * 0.01 + elapsedTime * this.shimmerSpeed) * 10;
+
+        // Apply flow pattern-specific modifications
+        if (this.flowPattern === "flowing_waves") {
+          y += sin(x * 0.005 + elapsedTime * 0.5) * 15;
+        } else if (this.flowPattern === "dancing_curtains") {
+          y += cos(x * 0.008 + elapsedTime + waveIndex) * 20;
+        }
+
+        vertex(x, y);
+      }
+      endShape();
+
+      // Add complementary wave below for fullness
+      if (waveIndex < 3) {
+        stroke(color[0], color[1], color[2], max(0, currentAlpha * 0.6));
+        strokeWeight(2);
+        beginShape();
+        noFill();
+        for (let x = 0; x <= width; x += 15) {
+          let y = wave.yOffset + 20;
+          y +=
+            sin(x * wave.frequency + wave.phase + PI) * (wave.amplitude * 0.7);
+          y += sin(x * 0.008 + elapsedTime * this.shimmerSpeed * 0.8) * 8;
+          vertex(x, y);
+        }
+        endShape();
       }
     }
 
-    // Add sparkle effect when hovered
+    // Add particle effects for extra magic
     if (this.isHovered) {
-      this.drawSparkles(elapsedTime);
+      this.drawAuroraParticles(elapsedTime);
     }
 
     pop();
   }
 
-  // Draw sparkle effects for magical touch
-  drawSparkles(elapsedTime) {
+  // Draw floating particles for magical aurora effect
+  drawAuroraParticles(elapsedTime) {
+    const colors =
+      this.data.visualProperties?.colors || this.defaultAuroraColors;
+
     push();
+    for (let i = 0; i < 12; i++) {
+      const x = noise(elapsedTime * 0.3 + i * 0.1) * width;
+      const y =
+        this.baseY + noise(elapsedTime * 0.2 + i * 0.15) * this.waveHeight;
 
-    // Generate sparkles along the rainbow arc
-    for (let i = 0; i < 8; i++) {
-      const angle = PI + (PI * i) / 7; // Distribute along semicircle
-      const radius = this.minRadius + random(this.maxRadius - this.minRadius);
-      const x = cos(angle) * radius;
-      const y = sin(angle) * radius;
+      const colorIndex = i % colors.length;
+      const color = colors[colorIndex];
+      const particleAlpha = 100 + sin(elapsedTime * 3 + i) * 50;
 
-      const sparkleAlpha = 100 + sin(elapsedTime * 4 + i) * 60; // Reduced intensity for ethereal effect
-      fill(255, 255, 255, max(0, sparkleAlpha));
+      if (Array.isArray(color) && color.length >= 3) {
+        fill(color[0], color[1], color[2], max(0, particleAlpha));
+      } else {
+        fill(0, 255, 100, max(0, particleAlpha));
+      }
       noStroke();
 
-      push();
-      translate(x, y);
-      rotate(elapsedTime * 2 + i);
-
-      // Draw star-like sparkle
-      const sparkleSize = 3 + sin(elapsedTime * 3 + i) * 2;
-      for (let j = 0; j < 4; j++) {
-        rotate(PI / 4);
-        ellipse(0, 0, sparkleSize, sparkleSize * 0.3);
-      }
-
-      pop();
+      const size = 2 + sin(elapsedTime * 2 + i) * 1;
+      ellipse(x, y, size);
     }
-
     pop();
   }
 
@@ -1968,442 +2076,482 @@ async function generateExoticPlant() {
   }
 }
 
-// async function generateMultiplePlants(quantity) {
-//   const button = document.querySelector(
-//     `button[onclick="generateMultiplePlants(${quantity})"]`
-//   );
-
-//   try {
-//     setLoadingState(button, true);
-
-//     // Create basic plants without waiting for AI generation
-//     for (let i = 0; i < quantity; i++) {
-//       addRandomPlant();
-//     }
-
-//     // Also request AI-generated plants in the background
-//     const response = await fetch("/api/generate-plant", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({ quantity: quantity }),
-//     });
-
-//     if (!response.ok) {
-//       throw new Error("Failed to generate plants");
-//     }
-
-//     const result = await response.json();
-//     console.log(`Generated ${result.total} plants`);
-//   } catch (error) {
-//     console.error("Error generating multiple plants:", error);
-//     alert("Error generating plants. Please try again.");
-//   } finally {
-//     setLoadingState(button, false);
-//   }
-// }
-
-// Simplify addRandomPlant function
-function addRandomPlant() {
-  if (plants.length < 1000) {
-    const flowerTypes = Object.keys(FLOWER_TYPES);
-
-    // Define safe margins
-    const marginX = 50;
-    const marginY = 100;
-
-    // Generate a random position within safe margins
-    let x = random(marginX, width - marginX);
-    let y = height - marginY + random(-30, 30); // Keep plants near ground level with some variation
-
-    // Check if position is far enough from existing plants
-    const minDistance = 50; // Minimum distance between plants
-    let validPosition = true;
-
-    // Try to find a spot that's not too close to other plants (check up to 20 existing plants randomly)
-    const plantsToCheck = Math.min(plants.length, 20);
-    for (let i = 0; i < plantsToCheck; i++) {
-      const randomIndex = Math.floor(random(plants.length));
-      const existingPlant = plants[randomIndex];
-      const d = dist(x, y, existingPlant.x, existingPlant.y);
-      if (d < minDistance) {
-        validPosition = false;
-        break;
-      }
-    }
-
-    // If position is not valid, adjust it slightly
-    if (!validPosition && plants.length > 10) {
-      x = random(marginX, width - marginX);
-      y = height - marginY + random(-40, 40);
-    }
-
-    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-    plants.push(new Plant(x, y, randomType));
-  }
-}
-
-function resetGarden() {
-  plants = [];
-  particles = [];
-
-  const flowerTypes = Object.keys(FLOWER_TYPES);
-  const marginX = 50;
-  const marginY = 100;
-  const minPlantDistance = 80;
-
-  // Create plants in layers for depth
-  for (let layer = 0; layer < 4; layer++) {
-    let plantsInLayer = map(layer, 0, 3, 6, 2); // More plants in front, fewer in back
-
-    for (let i = 0; i < plantsInLayer; i++) {
-      // Try to find a position not too close to other plants
-      let attempts = 0;
-      let validPosition = false;
-      let x, y;
-
-      while (!validPosition && attempts < 10) {
-        x = random(marginX, width - marginX);
-        y = height - marginY + random(-30, 30); // Near ground level
-
-        validPosition = true;
-
-        // Check distance to other plants
-        for (let j = 0; j < plants.length; j++) {
-          const d = dist(x, y, plants[j].x, plants[j].y);
-          if (d < minPlantDistance) {
-            validPosition = false;
-            break;
-          }
-        }
-
-        attempts++;
-      }
-
-      let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-      let plant = new Plant(x, y, randomType);
-
-      // Add depth offset based on layer
-      plant.depthOffset = layer * 25; // 0-75 depth range
-      plants.push(plant);
-    }
-  }
-}
-
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  colorMode(HSB, 360, 100, 100, 100);
-
-  // Initialize grass
-  for (let i = 0; i < width; i += 4) {
-    grassHeight.push({
-      height: random(20, 40),
-      offset: random(TWO_PI),
-      speed: random(0.02, 0.06),
-    });
-  }
-
-  // Show a message to click anywhere to start
-  textAlign(CENTER, CENTER);
-  textSize(24);
-  fill(0);
-  text("Click anywhere to start the garden", width / 2, height / 2);
-
-  // Initialize audio and plants only after first user interaction
-  const startInteraction = async () => {
+// Function to generate and display a psychedelic rainbow
+window.generatePsychedelicRainbow = async function () {
+  if (Tone.context.state !== "running") {
     await Tone.start();
-    removeEventListener("click", startInteraction);
-    removeEventListener("touchstart", startInteraction);
-    initializeAudioAndPlants();
-  };
+  }
+  if (!rainbowPlantBtn) {
+    console.error("Rainbow button not initialized!");
+    return;
+  }
+  setLoadingState(rainbowPlantBtn, true);
 
-  addEventListener("click", startInteraction);
-  addEventListener("touchstart", startInteraction);
-}
+  try {
+    const response = await fetch("/api/generate-rainbow", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-function drawGrass() {
-  // Draw ground with gradient
-  noStroke();
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.error || "Failed to generate rainbow");
+      return;
+    }
 
-  // Main ground layer
-  fill(120, 40, 30);
-  rect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT);
+    const rainbowData = await response.json();
+    console.log("Psychedelic Rainbow Data:", rainbowData);
+    // Ensure visualProperties and its nested properties exist before accessing
+    if (rainbowData.visualProperties && rainbowData.visualProperties.colors) {
+      console.log(
+        "Rainbow Colors from AI:",
+        rainbowData.visualProperties.colors
+      );
+    } else {
+      console.warn(
+        "Visual properties or colors missing in rainbowData:",
+        rainbowData
+      );
+      // Provide default colors or handle error appropriately
+      // For now, let's ensure rainbowData.visualProperties.colors is an empty array if missing
+      if (!rainbowData.visualProperties) rainbowData.visualProperties = {};
+      if (!rainbowData.visualProperties.colors)
+        rainbowData.visualProperties.colors = [];
+    }
+    activeRainbows.push(new PsychedelicRainbow(rainbowData));
 
-  // Add darker topsoil layer
-  fill(110, 35, 25);
-  rect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT * 0.3);
+    // Update UI or info panel if needed
+    const infoHTML = `
+      <h4>🌈 Psychedelic Rainbow Generated!</h4>
+      <div class="rainbow-info">
+        <p><strong>Name:</strong> ${rainbowData.name || "N/A"}</p>
+        <p>${rainbowData.description || "No description."}</p>
+        <p><strong>Soundscape:</strong> ${
+          rainbowData.soundProperties
+            ? rainbowData.soundProperties.soundscapeName
+            : "N/A"
+        }</p>
+      </div>
+    `;
+    // Prepend to aiInfo or a dedicated rainbow info panel
+    const currentInfo = document.querySelector(".ai-info").innerHTML;
+    document.querySelector(".ai-info").innerHTML = infoHTML + currentInfo;
+  } catch (error) {
+    console.error("Error generating psychedelic rainbow:", error);
+    alert("Error generating rainbow. Please check console.");
+  } finally {
+    setLoadingState(rainbowPlantBtn, false);
+  }
+};
 
-  // Add ground texture/detail
-  for (let i = 0; i < width; i += 20) {
-    for (let j = 0; j < GROUND_HEIGHT * 0.3; j += 15) {
-      fill(115, 38, 28, random(10, 20));
-      ellipse(
-        i + random(-5, 5),
-        height - GROUND_HEIGHT + j + random(-5, 5),
-        random(5, 15)
+// Function to generate and display a psychedelic aurora borealis
+window.generatePsychedelicAurora = async function () {
+  if (Tone.context.state !== "running") {
+    await Tone.start();
+  }
+  if (!auroraPlantBtn) {
+    console.error("Aurora button not initialized!");
+    return;
+  }
+  setLoadingState(auroraPlantBtn, true);
+
+  try {
+    console.log("Fetching aurora data...");
+    const response = await fetch("/api/generate-aurora", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.error || "Failed to generate aurora");
+      return;
+    }
+
+    const auroraData = await response.json();
+    console.log("Psychedelic Aurora Data:", auroraData);
+
+    // Ensure visualProperties and its nested properties exist before accessing
+    if (auroraData.visualProperties && auroraData.visualProperties.colors) {
+      console.log("Aurora Colors from AI:", auroraData.visualProperties.colors);
+    } else {
+      console.warn(
+        "Visual properties or colors missing in auroraData:",
+        auroraData
+      );
+      // Provide default colors or handle error appropriately
+      if (!auroraData.visualProperties) auroraData.visualProperties = {};
+      if (!auroraData.visualProperties.colors)
+        auroraData.visualProperties.colors = [];
+    }
+
+    activeAuroras.push(new PsychedelicAurora(auroraData));
+
+    // Update UI or info panel if needed
+    const infoHTML = `
+      <h4>🌌 Psychedelic Aurora Generated!</h4>
+      <div class="aurora-info">
+        <p><strong>Name:</strong> ${auroraData.name || "N/A"}</p>
+        <p>${auroraData.description || "No description."}</p>
+        <p><strong>Soundscape:</strong> ${
+          auroraData.soundProperties
+            ? auroraData.soundProperties.soundscapeName
+            : "N/A"
+        }</p>
+      </div>
+    `;
+    // Prepend to aiInfo or a dedicated aurora info panel
+    const currentInfo = document.querySelector(".ai-info").innerHTML;
+    document.querySelector(".ai-info").innerHTML = infoHTML + currentInfo;
+  } catch (error) {
+    console.error("Error generating psychedelic aurora:", error);
+    alert("Error generating aurora. Please check console.");
+  } finally {
+    setLoadingState(auroraPlantBtn, false);
+  }
+};
+
+class PsychedelicAurora {
+  constructor(data) {
+    this.data = data; // Contains visualProperties and soundProperties
+    this.startTime = millis();
+    this.alive = true;
+    this.isHovered = false;
+    this.soundPlaying = false;
+
+    // Define default aurora colors - typical aurora borealis colors
+    this.defaultAuroraColors = [
+      [80, 255, 120], // Bright Green (most common aurora color)
+      [120, 255, 180], // Cyan-Green
+      [180, 120, 255], // Purple
+      [255, 80, 180], // Magenta
+      [80, 180, 255], // Blue
+      [255, 255, 80], // Yellow (rare but spectacular)
+      [255, 120, 80], // Red (high altitude aurora)
+    ];
+
+    // Aurora-specific visual properties
+    this.waveCount = this.data.visualProperties?.waveCount || 5;
+    this.waveHeight = (this.data.visualProperties?.waveHeight || 0.6) * height;
+    this.flowPattern =
+      this.data.visualProperties?.flowPattern || "flowing_waves";
+    this.intensity = this.data.visualProperties?.intensity || 0.8;
+    this.shimmerSpeed = this.data.visualProperties?.shimmerSpeed || 1.5;
+
+    // Position aurora in upper portion of sky
+    this.baseY = height * 0.2; // Start in upper 20% of screen
+    this.maxY = height * 0.7; // Extend down to 70% of screen
+
+    // Create flowing wave patterns for aurora
+    this.waves = [];
+    for (let i = 0; i < this.waveCount; i++) {
+      this.waves.push({
+        yOffset: this.baseY + (i * this.waveHeight) / this.waveCount,
+        frequency: 0.003 + i * 0.001,
+        amplitude: 20 + i * 15,
+        phase: i * PI * 0.3,
+      });
+    }
+
+    // Initialize sound
+    const validOscillatorTypes = ["sine", "triangle", "square", "sawtooth"];
+    let requestedOscillatorType =
+      this.data.soundProperties && this.data.soundProperties.oscillatorType
+        ? this.data.soundProperties.oscillatorType
+        : "sine";
+
+    // Validate oscillator type and fallback to sine if invalid
+    const oscillatorType = validOscillatorTypes.includes(
+      requestedOscillatorType
+    )
+      ? requestedOscillatorType
+      : "sine";
+
+    if (requestedOscillatorType !== oscillatorType) {
+      console.warn(
+        `Invalid oscillator type '${requestedOscillatorType}', using 'sine' instead`
+      );
+    }
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds
+        : 30;
+    const reverbMix =
+      this.data.soundProperties && this.data.soundProperties.reverbMix
+        ? this.data.soundProperties.reverbMix
+        : 0.7;
+
+    this.synth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: oscillatorType,
+      },
+      envelope: {
+        attack: 1.0,
+        decay: 2.0,
+        sustain: 0.6,
+        release: 3.0,
+      },
+      volume: -15,
+    });
+
+    this.reverb = new Tone.Reverb(durationSeconds * 0.6).toDestination();
+    this.reverb.wet.value = reverbMix;
+    this.synth.connect(this.reverb);
+
+    // Don't play sound automatically - only on hover
+  }
+
+  // Check if mouse is hovering over the aurora
+  isMouseOver(mouseX, mouseY) {
+    // Aurora covers the upper portion of the screen
+    return mouseY >= this.baseY && mouseY <= this.maxY;
+  }
+
+  // Start playing sound on hover
+  startHoverSound() {
+    if (!soundEnabled || this.soundPlaying) return;
+    this.soundPlaying = true;
+    this.playEtherealSound();
+  }
+
+  // Stop sound when hover ends
+  stopHoverSound() {
+    if (this.synth && this.soundPlaying) {
+      this.synth.releaseAll();
+      this.soundPlaying = false;
+    }
+  }
+
+  // Update hover state
+  updateHover(mouseX, mouseY) {
+    const wasHovered = this.isHovered;
+    this.isHovered = this.isMouseOver(mouseX, mouseY);
+
+    if (this.isHovered && !wasHovered) {
+      this.startHoverSound();
+    } else if (!this.isHovered && wasHovered) {
+      this.stopHoverSound();
+    }
+  }
+
+  playEtherealSound() {
+    if (!soundEnabled) return;
+    const now = Tone.now();
+
+    // Ensure soundProperties and its nested properties exist
+    const baseFrequency =
+      this.data.soundProperties && this.data.soundProperties.baseFrequency
+        ? this.data.soundProperties.baseFrequency
+        : 150;
+    const harmonicComplexity =
+      this.data.soundProperties && this.data.soundProperties.harmonicComplexity
+        ? this.data.soundProperties.harmonicComplexity
+        : 2.5;
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds * 0.8
+        : 24;
+
+    // Create ethereal, spacious aurora soundscape
+    const etherealIntervals = [1, 1.5, 2, 2.5, 3, 4, 5, 6];
+    const numTones = Math.min(6, Math.floor(harmonicComplexity * 2));
+
+    for (let i = 0; i < numTones; i++) {
+      const intervalIndex = i % etherealIntervals.length;
+      const freq = baseFrequency * etherealIntervals[intervalIndex];
+
+      // Add subtle detuning for organic feel
+      const detune = (Math.random() - 0.5) * 0.02;
+      const finalFreq = freq * (1 + detune);
+
+      // Velocity decreases with each harmonic
+      const velocity = Math.max(0.05, 0.3 - i * 0.04);
+
+      // Stagger timing for flowing effect
+      const delay = i * (0.1 + Math.random() * 0.15);
+
+      this.synth.triggerAttackRelease(
+        finalFreq,
+        durationSeconds,
+        now + delay,
+        velocity
       );
     }
   }
 
-  // Update grass wind effect
-  grassWind = noise(frameCount * 0.01) * 2 - 1;
-  if (currentWeather && currentWeather.active) {
-    grassWind += windForce;
-  }
-
-  // Draw grass blades
-  for (let i = 0; i < grassHeight.length; i++) {
-    const x = i * 4;
-    const grass = grassHeight[i];
-
-    // Make height dynamic using noise based on position and time
-    const dynamicHeight = map(
-      noise(x * 0.02, frameCount * 0.001),
-      0,
-      1,
-      grass.height * 0.9, // Increased minimum height
-      grass.height * 1.5 // Increased maximum height for taller grass
-    );
-
-    const windOffset = sin(frameCount * grass.speed + grass.offset) * 15; // Increased wind effect
-    const totalOffset = windOffset + grassWind * 20;
-
-    // Gradient for grass color
-    const grassColor = color(90, 80, 60);
-    const grassAlpha = map(dynamicHeight, 20, 40, 255, 200);
-    grassColor.setAlpha(grassAlpha);
-
-    stroke(grassColor);
-    strokeWeight(2);
-    line(
-      x,
-      height - GROUND_HEIGHT,
-      x + totalOffset,
-      height - GROUND_HEIGHT - dynamicHeight
-    );
-  }
-}
-
-function draw() {
-  background(220, 30, 15);
-
-  // Update and display active rainbows FIRST so they are in the background
-  for (let i = activeRainbows.length - 1; i >= 0; i--) {
-    activeRainbows[i].update();
-    // Update hover state for mouse interaction
-    activeRainbows[i].updateHover(mouseX, mouseY);
-    activeRainbows[i].display();
-    if (!activeRainbows[i].alive) {
-      activeRainbows.splice(i, 1);
+  update() {
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds
+        : 30;
+    if (millis() - this.startTime > durationSeconds * 1000) {
+      this.alive = false;
+      this.disposeSound();
     }
   }
 
-  // Draw grass
-  drawGrass();
+  display() {
+    if (!this.alive) return;
 
-  // Draw weather effects
-  drawWeather();
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds
+        : 30;
 
-  // Update and draw plants, handle plant lifecycle
-  for (let i = plants.length - 1; i >= 0; i--) {
-    plants[i].update();
+    const elapsedTime = (millis() - this.startTime) / 1000;
+    const progress = elapsedTime / durationSeconds;
+    if (progress > 1) return;
 
-    // Check if the plant is dead before drawing
-    if (plants[i].state === LIFECYCLE_STATES.DEAD) {
-      // Show a brief decay animation before removing
-      if (plants[i].health > -10) {
-        plants[i].health -= 0.5; // Make it fade out gradually
-        plants[i].draw(); // Draw the decaying plant
+    // Use AI-generated colors or default aurora colors
+    const colors =
+      this.data.visualProperties &&
+      this.data.visualProperties.colors &&
+      this.data.visualProperties.colors.length > 0
+        ? this.data.visualProperties.colors
+        : this.defaultAuroraColors;
+
+    // Base alpha with gradual fade
+    const baseAlpha = 150 * (1 - progress * 0.4) * this.intensity;
+
+    push();
+
+    // Apply flow pattern transformations
+    if (this.flowPattern === "breathing_veils") {
+      const breath = 0.95 + sin(elapsedTime * PI * 0.3) * 0.05;
+      scale(1, breath);
+    } else if (this.flowPattern === "spiral_vortex") {
+      translate(width / 2, height / 2);
+      rotate(elapsedTime * 0.1);
+      translate(-width / 2, -height / 2);
+    }
+
+    // Draw aurora waves
+    for (let waveIndex = 0; waveIndex < this.waves.length; waveIndex++) {
+      const wave = this.waves[waveIndex];
+      const colorIndex = waveIndex % colors.length;
+      const color = colors[colorIndex];
+
+      let currentAlpha = baseAlpha;
+
+      // Apply shimmer effects
+      if (this.flowPattern === "rippling_sheets") {
+        currentAlpha *= 0.7 + noise(elapsedTime * 2 + waveIndex * 0.5) * 0.3;
+      } else if (this.flowPattern === "dancing_curtains") {
+        currentAlpha *=
+          0.8 +
+          sin(elapsedTime * PI * this.shimmerSpeed + waveIndex * 0.6) * 0.2;
+      }
+
+      // Enhance on hover
+      if (this.isHovered) {
+        currentAlpha *= 1.2;
+      }
+
+      // Set stroke color
+      noFill();
+      if (Array.isArray(color) && color.length >= 3) {
+        stroke(color[0], color[1], color[2], max(0, currentAlpha));
       } else {
-        // Remove the plant completely
-        plants.splice(i, 1);
+        stroke(0, 255, 100, max(0, currentAlpha)); // Default to green
       }
-    } else {
-      plants[i].draw();
-    }
-  }
-}
+      strokeWeight(3 + waveIndex * 0.5);
 
-async function mousePressed() {
-  try {
-    // Initialize audio context on first click if not already running
-    if (Tone.context.state !== "running") {
-      await Tone.start();
-      console.log("Audio context started on user interaction");
-      await initializeAudio();
-    }
+      // Draw flowing wave using beginShape/endShape for smooth curves
+      beginShape();
+      noFill();
 
-    if (eraserMode) {
-      // Remove plant if clicking on it in eraser mode
-      for (let i = plants.length - 1; i >= 0; i--) {
-        if (plants[i].isMouseOver()) {
-          plants.splice(i, 1);
-          break;
-        }
-      }
-    } else if (creatorMode) {
-      // Create plant at the clicked location
-      if (plants.length < 1000) {
-        const marginX = 50;
-        const marginY = 100;
-        const y = constrain(
-          mouseY,
-          height - marginY - 100,
-          height - marginY + 30
-        );
-        const x = constrain(mouseX, marginX, width - marginX);
+      for (let x = 0; x <= width; x += 10) {
+        // Create flowing wave pattern
+        let y = wave.yOffset;
 
-        if (plantType === "ai") {
-          const plantData = await generateExoticPlant();
-          if (plantData) {
-            plants.push(new Plant(x, y, null, plantData));
-          }
-        } else {
-          // random plant
-          const flowerTypes = Object.keys(FLOWER_TYPES);
-          let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-          plants.push(new Plant(x, y, randomType));
-        }
-      }
-    } else {
-      // Default interact mode - Add energy to nearby plants on click
-      for (let plant of plants) {
-        let d = dist(mouseX, mouseY, plant.x, plant.y);
-        if (d < 100) {
-          plant.energy = plant.maxEnergy;
-          await plant.interact();
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error in mousePressed:", error);
-  }
-}
+        // Add primary wave motion
+        y += sin(x * wave.frequency + wave.phase) * wave.amplitude;
 
-function keyPressed() {
-  if (key === "2") {
-    // Toggle random plant creator mode
-    creatorMode = !creatorMode;
-    plantType = "random";
-    eraserMode = false;
-    document.body.style.cursor = creatorMode ? "crosshair" : "default";
-  } else if (key === "3") {
-    // Toggle AI plant creator mode
-    creatorMode = !creatorMode;
-    plantType = "ai";
-    eraserMode = false;
-    document.body.style.cursor = creatorMode ? "crosshair" : "default";
-  } else if (key === "e" || key === "E") {
-    // Toggle eraser mode
-    eraserMode = !eraserMode;
-    creatorMode = false;
-    document.body.style.cursor = eraserMode ? "crosshair" : "default";
-  } else if (key === "c" || key === "C") {
-    // Clear all plants
-    plants = [];
-    particles = [];
-    // Also clear any ongoing sound synths
-    if (!soundEnabled) {
-      Object.values(synths).forEach((synth) => {
-        if (synth && synth.dispose) {
-          synth.releaseAll();
-        }
-      });
-    }
-  } else if (key === "m" || key === "M") {
-    // Toggle sound on/off
-    toggleSound();
-  }
-}
+        // Add secondary motion for more organic feel
+        y +=
+          sin(x * wave.frequency * 2 + wave.phase * 1.5) *
+          (wave.amplitude * 0.3);
 
-// Simplify addRandomPlant function
-function addRandomPlant() {
-  if (plants.length < 1000) {
-    const flowerTypes = Object.keys(FLOWER_TYPES);
+        // Add shimmer effect
+        y += sin(x * 0.01 + elapsedTime * this.shimmerSpeed) * 10;
 
-    // Define safe margins
-    const marginX = 50;
-    const marginY = 100;
-
-    // Generate a random position within safe margins
-    let x = random(marginX, width - marginX);
-    let y = height - marginY + random(-30, 30); // Keep plants near ground level with some variation
-
-    // Check if position is far enough from existing plants
-    const minDistance = 50; // Minimum distance between plants
-    let validPosition = true;
-
-    // Try to find a spot that's not too close to other plants (check up to 20 existing plants randomly)
-    const plantsToCheck = Math.min(plants.length, 20);
-    for (let i = 0; i < plantsToCheck; i++) {
-      const randomIndex = Math.floor(random(plants.length));
-      const existingPlant = plants[randomIndex];
-      const d = dist(x, y, existingPlant.x, existingPlant.y);
-      if (d < minDistance) {
-        validPosition = false;
-        break;
-      }
-    }
-
-    // If position is not valid, adjust it slightly
-    if (!validPosition && plants.length > 10) {
-      x = random(marginX, width - marginX);
-      y = height - marginY + random(-40, 40);
-    }
-
-    let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-    plants.push(new Plant(x, y, randomType));
-  }
-}
-
-function resetGarden() {
-  plants = [];
-  particles = [];
-
-  const flowerTypes = Object.keys(FLOWER_TYPES);
-  const marginX = 50;
-  const marginY = 100;
-  const minPlantDistance = 80;
-
-  // Create plants in layers for depth
-  for (let layer = 0; layer < 4; layer++) {
-    let plantsInLayer = map(layer, 0, 3, 6, 2); // More plants in front, fewer in back
-
-    for (let i = 0; i < plantsInLayer; i++) {
-      // Try to find a position not too close to other plants
-      let attempts = 0;
-      let validPosition = false;
-      let x, y;
-
-      while (!validPosition && attempts < 10) {
-        x = random(marginX, width - marginX);
-        y = height - marginY + random(-30, 30); // Near ground level
-
-        validPosition = true;
-
-        // Check distance to other plants
-        for (let j = 0; j < plants.length; j++) {
-          const d = dist(x, y, plants[j].x, plants[j].y);
-          if (d < minPlantDistance) {
-            validPosition = false;
-            break;
-          }
+        // Apply flow pattern-specific modifications
+        if (this.flowPattern === "flowing_waves") {
+          y += sin(x * 0.005 + elapsedTime * 0.5) * 15;
+        } else if (this.flowPattern === "dancing_curtains") {
+          y += cos(x * 0.008 + elapsedTime + waveIndex) * 20;
         }
 
-        attempts++;
+        vertex(x, y);
       }
+      endShape();
 
-      let randomType = flowerTypes[Math.floor(random(flowerTypes.length))];
-      let plant = new Plant(x, y, randomType);
+      // Add complementary wave below for fullness
+      if (waveIndex < 3) {
+        stroke(color[0], color[1], color[2], max(0, currentAlpha * 0.6));
+        strokeWeight(2);
+        beginShape();
+        noFill();
+        for (let x = 0; x <= width; x += 15) {
+          let y = wave.yOffset + 20;
+          y +=
+            sin(x * wave.frequency + wave.phase + PI) * (wave.amplitude * 0.7);
+          y += sin(x * 0.008 + elapsedTime * this.shimmerSpeed * 0.8) * 8;
+          vertex(x, y);
+        }
+        endShape();
+      }
+    }
 
-      // Add depth offset based on layer
-      plant.depthOffset = layer * 25; // 0-75 depth range
-      plants.push(plant);
+    // Add particle effects for extra magic
+    if (this.isHovered) {
+      this.drawAuroraParticles(elapsedTime);
+    }
+
+    pop();
+  }
+
+  // Draw floating particles for magical aurora effect
+  drawAuroraParticles(elapsedTime) {
+    const colors =
+      this.data.visualProperties?.colors || this.defaultAuroraColors;
+
+    push();
+    for (let i = 0; i < 12; i++) {
+      const x = noise(elapsedTime * 0.3 + i * 0.1) * width;
+      const y =
+        this.baseY + noise(elapsedTime * 0.2 + i * 0.15) * this.waveHeight;
+
+      const colorIndex = i % colors.length;
+      const color = colors[colorIndex];
+      const particleAlpha = 100 + sin(elapsedTime * 3 + i) * 50;
+
+      if (Array.isArray(color) && color.length >= 3) {
+        fill(color[0], color[1], color[2], max(0, particleAlpha));
+      } else {
+        fill(0, 255, 100, max(0, particleAlpha));
+      }
+      noStroke();
+
+      const size = 2 + sin(elapsedTime * 2 + i) * 1;
+      ellipse(x, y, size);
+    }
+    pop();
+  }
+
+  disposeSound() {
+    if (this.synth) {
+      this.synth.releaseAll();
+      this.synth.dispose();
+      this.synth = null;
+    }
+    if (this.reverb) {
+      this.reverb.dispose();
+      this.reverb = null;
     }
   }
-}
-
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
 }

@@ -10,11 +10,13 @@ let eraserMode = false;
 let creatorMode = false; // Toggle for creation mode
 let plantType = "random"; // Type of plant to create (random or ai)
 let activeRainbows = []; // Array to store active rainbow data and objects
+let activeAuroras = []; // Array to store active aurora data and objects
 
 // UI elements
 let aiPlantBtn;
 let aiInfo;
 let rainbowPlantBtn; // Button for generating rainbows
+let auroraPlantBtn; // Button for generating aurora borealis
 
 // Responsive scaling variables
 let scaleFactor = 1;
@@ -29,6 +31,10 @@ window.addEventListener("load", () => {
   // Get the rainbow button by its onclick attribute
   rainbowPlantBtn = document.querySelector(
     'button[onclick="generatePsychedelicRainbow()"]'
+  );
+  // Get the aurora button by its onclick attribute
+  auroraPlantBtn = document.querySelector(
+    'button[onclick="generatePsychedelicAurora()"]'
   );
 
   // Calculate initial responsive values
@@ -431,6 +437,76 @@ window.generatePsychedelicRainbow = async function () {
   }
 };
 
+// Function to generate and display a psychedelic aurora borealis
+window.generatePsychedelicAurora = async function () {
+  if (Tone.context.state !== "running") {
+    await Tone.start();
+  }
+  if (!auroraPlantBtn) {
+    console.error("Aurora button not initialized!");
+    return;
+  }
+  setLoadingState(auroraPlantBtn, true);
+
+  try {
+    console.log("Fetching aurora data...");
+    const response = await fetch("/api/generate-aurora", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.error || "Failed to generate aurora");
+      return;
+    }
+
+    const auroraData = await response.json();
+    console.log("Psychedelic Aurora Data:", auroraData);
+
+    // Ensure visualProperties and its nested properties exist before accessing
+    if (auroraData.visualProperties && auroraData.visualProperties.colors) {
+      console.log("Aurora Colors from AI:", auroraData.visualProperties.colors);
+    } else {
+      console.warn(
+        "Visual properties or colors missing in auroraData:",
+        auroraData
+      );
+      // Provide default colors or handle error appropriately
+      if (!auroraData.visualProperties) auroraData.visualProperties = {};
+      if (!auroraData.visualProperties.colors)
+        auroraData.visualProperties.colors = [];
+    }
+
+    activeAuroras.push(new PsychedelicAurora(auroraData));
+
+    // Update UI or info panel if needed
+    const infoHTML = `
+      <h4>🌌 Psychedelic Aurora Generated!</h4>
+      <div class="aurora-info">
+        <p><strong>Name:</strong> ${auroraData.name || "N/A"}</p>
+        <p>${auroraData.description || "No description."}</p>
+        <p><strong>Soundscape:</strong> ${
+          auroraData.soundProperties
+            ? auroraData.soundProperties.soundscapeName
+            : "N/A"
+        }</p>
+      </div>
+    `;
+    // Prepend to aiInfo or a dedicated aurora info panel
+    const aiInfoContent = document.querySelector("#ai-info-content");
+    const currentInfo = aiInfoContent.innerHTML;
+    aiInfoContent.innerHTML = infoHTML + currentInfo;
+  } catch (error) {
+    console.error("Error generating psychedelic aurora:", error);
+    alert("Error generating aurora. Please check console.");
+  } finally {
+    setLoadingState(auroraPlantBtn, false);
+  }
+};
+
 class PsychedelicRainbow {
   constructor(data) {
     this.data = data; // Contains visualProperties and soundProperties
@@ -468,10 +544,24 @@ class PsychedelicRainbow {
 
     // Initialize sound
     // Ensure soundProperties and its nested properties exist
-    const oscillatorType =
+    const validOscillatorTypes = ["sine", "triangle", "square", "sawtooth"];
+    let requestedOscillatorType =
       this.data.soundProperties && this.data.soundProperties.oscillatorType
         ? this.data.soundProperties.oscillatorType
         : "sine";
+
+    // Validate oscillator type and fallback to sine if invalid
+    const oscillatorType = validOscillatorTypes.includes(
+      requestedOscillatorType
+    )
+      ? requestedOscillatorType
+      : "sine";
+
+    if (requestedOscillatorType !== oscillatorType) {
+      console.warn(
+        `Invalid oscillator type '${requestedOscillatorType}', using 'sine' instead`
+      );
+    }
     const durationSeconds =
       this.data.soundProperties && this.data.soundProperties.durationSeconds
         ? this.data.soundProperties.durationSeconds
@@ -777,6 +867,347 @@ class PsychedelicRainbow {
       pop();
     }
 
+    pop();
+  }
+
+  disposeSound() {
+    if (this.synth) {
+      this.synth.releaseAll();
+      this.synth.dispose();
+      this.synth = null;
+    }
+    if (this.reverb) {
+      this.reverb.dispose();
+      this.reverb = null;
+    }
+  }
+}
+
+class PsychedelicAurora {
+  constructor(data) {
+    this.data = data; // Contains visualProperties and soundProperties
+    this.startTime = millis();
+    this.alive = true;
+    this.isHovered = false;
+    this.soundPlaying = false;
+
+    // Define default aurora colors - typical aurora borealis colors
+    this.defaultAuroraColors = [
+      [80, 255, 120], // Bright Green (most common aurora color)
+      [120, 255, 180], // Cyan-Green
+      [180, 120, 255], // Purple
+      [255, 80, 180], // Magenta
+      [80, 180, 255], // Blue
+      [255, 255, 80], // Yellow (rare but spectacular)
+      [255, 120, 80], // Red (high altitude aurora)
+    ];
+
+    // Aurora-specific visual properties
+    this.waveCount = this.data.visualProperties?.waveCount || 5;
+    this.waveHeight = (this.data.visualProperties?.waveHeight || 0.6) * height;
+    this.flowPattern =
+      this.data.visualProperties?.flowPattern || "flowing_waves";
+    this.intensity = this.data.visualProperties?.intensity || 0.8;
+    this.shimmerSpeed = this.data.visualProperties?.shimmerSpeed || 1.5;
+
+    // Position aurora in upper portion of sky
+    this.baseY = height * 0.2; // Start in upper 20% of screen
+    this.maxY = height * 0.7; // Extend down to 70% of screen
+
+    // Create flowing wave patterns for aurora
+    this.waves = [];
+    for (let i = 0; i < this.waveCount; i++) {
+      this.waves.push({
+        yOffset: this.baseY + (i * this.waveHeight) / this.waveCount,
+        frequency: 0.003 + i * 0.001,
+        amplitude: 20 + i * 15,
+        phase: i * PI * 0.3,
+      });
+    }
+
+    // Initialize sound
+    const validOscillatorTypes = ["sine", "triangle", "square", "sawtooth"];
+    let requestedOscillatorType =
+      this.data.soundProperties && this.data.soundProperties.oscillatorType
+        ? this.data.soundProperties.oscillatorType
+        : "sine";
+
+    // Validate oscillator type and fallback to sine if invalid
+    const oscillatorType = validOscillatorTypes.includes(
+      requestedOscillatorType
+    )
+      ? requestedOscillatorType
+      : "sine";
+
+    if (requestedOscillatorType !== oscillatorType) {
+      console.warn(
+        `Invalid oscillator type '${requestedOscillatorType}', using 'sine' instead`
+      );
+    }
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds
+        : 30;
+    const reverbMix =
+      this.data.soundProperties && this.data.soundProperties.reverbMix
+        ? this.data.soundProperties.reverbMix
+        : 0.7;
+
+    this.synth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {
+        type: oscillatorType,
+      },
+      envelope: {
+        attack: 1.0,
+        decay: 2.0,
+        sustain: 0.6,
+        release: 3.0,
+      },
+      volume: -15,
+    });
+
+    this.reverb = new Tone.Reverb(durationSeconds * 0.6).toDestination();
+    this.reverb.wet.value = reverbMix;
+    this.synth.connect(this.reverb);
+
+    // Don't play sound automatically - only on hover
+  }
+
+  // Check if mouse is hovering over the aurora
+  isMouseOver(mouseX, mouseY) {
+    // Aurora covers the upper portion of the screen
+    return mouseY >= this.baseY && mouseY <= this.maxY;
+  }
+
+  // Start playing sound on hover
+  startHoverSound() {
+    if (!soundEnabled || this.soundPlaying) return;
+    this.soundPlaying = true;
+    this.playEtherealSound();
+  }
+
+  // Stop sound when hover ends
+  stopHoverSound() {
+    if (this.synth && this.soundPlaying) {
+      this.synth.releaseAll();
+      this.soundPlaying = false;
+    }
+  }
+
+  // Update hover state
+  updateHover(mouseX, mouseY) {
+    const wasHovered = this.isHovered;
+    this.isHovered = this.isMouseOver(mouseX, mouseY);
+
+    if (this.isHovered && !wasHovered) {
+      this.startHoverSound();
+    } else if (!this.isHovered && wasHovered) {
+      this.stopHoverSound();
+    }
+  }
+
+  playEtherealSound() {
+    if (!soundEnabled) return;
+    const now = Tone.now();
+
+    // Ensure soundProperties and its nested properties exist
+    const baseFrequency =
+      this.data.soundProperties && this.data.soundProperties.baseFrequency
+        ? this.data.soundProperties.baseFrequency
+        : 150;
+    const harmonicComplexity =
+      this.data.soundProperties && this.data.soundProperties.harmonicComplexity
+        ? this.data.soundProperties.harmonicComplexity
+        : 2.5;
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds * 0.8
+        : 24;
+
+    // Create ethereal, spacious aurora soundscape
+    const etherealIntervals = [1, 1.5, 2, 2.5, 3, 4, 5, 6];
+    const numTones = Math.min(6, Math.floor(harmonicComplexity * 2));
+
+    for (let i = 0; i < numTones; i++) {
+      const intervalIndex = i % etherealIntervals.length;
+      const freq = baseFrequency * etherealIntervals[intervalIndex];
+
+      // Add subtle detuning for organic feel
+      const detune = (Math.random() - 0.5) * 0.02;
+      const finalFreq = freq * (1 + detune);
+
+      // Velocity decreases with each harmonic
+      const velocity = Math.max(0.05, 0.3 - i * 0.04);
+
+      // Stagger timing for flowing effect
+      const delay = i * (0.1 + Math.random() * 0.15);
+
+      this.synth.triggerAttackRelease(
+        finalFreq,
+        durationSeconds,
+        now + delay,
+        velocity
+      );
+    }
+  }
+
+  update() {
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds
+        : 30;
+    if (millis() - this.startTime > durationSeconds * 1000) {
+      this.alive = false;
+      this.disposeSound();
+    }
+  }
+
+  display() {
+    if (!this.alive) return;
+
+    const durationSeconds =
+      this.data.soundProperties && this.data.soundProperties.durationSeconds
+        ? this.data.soundProperties.durationSeconds
+        : 30;
+
+    const elapsedTime = (millis() - this.startTime) / 1000;
+    const progress = elapsedTime / durationSeconds;
+    if (progress > 1) return;
+
+    // Use AI-generated colors or default aurora colors
+    const colors =
+      this.data.visualProperties &&
+      this.data.visualProperties.colors &&
+      this.data.visualProperties.colors.length > 0
+        ? this.data.visualProperties.colors
+        : this.defaultAuroraColors;
+
+    // Base alpha with gradual fade
+    const baseAlpha = 150 * (1 - progress * 0.4) * this.intensity;
+
+    push();
+
+    // Apply flow pattern transformations
+    if (this.flowPattern === "breathing_veils") {
+      const breath = 0.95 + sin(elapsedTime * PI * 0.3) * 0.05;
+      scale(1, breath);
+    } else if (this.flowPattern === "spiral_vortex") {
+      translate(width / 2, height / 2);
+      rotate(elapsedTime * 0.1);
+      translate(-width / 2, -height / 2);
+    }
+
+    // Draw aurora waves
+    for (let waveIndex = 0; waveIndex < this.waves.length; waveIndex++) {
+      const wave = this.waves[waveIndex];
+      const colorIndex = waveIndex % colors.length;
+      const color = colors[colorIndex];
+
+      let currentAlpha = baseAlpha;
+
+      // Apply shimmer effects
+      if (this.flowPattern === "rippling_sheets") {
+        currentAlpha *= 0.7 + noise(elapsedTime * 2 + waveIndex * 0.5) * 0.3;
+      } else if (this.flowPattern === "dancing_curtains") {
+        currentAlpha *=
+          0.8 +
+          sin(elapsedTime * PI * this.shimmerSpeed + waveIndex * 0.6) * 0.2;
+      }
+
+      // Enhance on hover
+      if (this.isHovered) {
+        currentAlpha *= 1.2;
+      }
+
+      // Set stroke color
+      noFill();
+      if (Array.isArray(color) && color.length >= 3) {
+        stroke(color[0], color[1], color[2], max(0, currentAlpha));
+      } else {
+        stroke(0, 255, 100, max(0, currentAlpha)); // Default to green
+      }
+      strokeWeight(3 + waveIndex * 0.5);
+
+      // Draw flowing wave using beginShape/endShape for smooth curves
+      beginShape();
+      noFill();
+
+      for (let x = 0; x <= width; x += 10) {
+        // Create flowing wave pattern
+        let y = wave.yOffset;
+
+        // Add primary wave motion
+        y += sin(x * wave.frequency + wave.phase) * wave.amplitude;
+
+        // Add secondary motion for more organic feel
+        y +=
+          sin(x * wave.frequency * 2 + wave.phase * 1.5) *
+          (wave.amplitude * 0.3);
+
+        // Add shimmer effect
+        y += sin(x * 0.01 + elapsedTime * this.shimmerSpeed) * 10;
+
+        // Apply flow pattern-specific modifications
+        if (this.flowPattern === "flowing_waves") {
+          y += sin(x * 0.005 + elapsedTime * 0.5) * 15;
+        } else if (this.flowPattern === "dancing_curtains") {
+          y += cos(x * 0.008 + elapsedTime + waveIndex) * 20;
+        }
+
+        vertex(x, y);
+      }
+      endShape();
+
+      // Add complementary wave below for fullness
+      if (waveIndex < 3) {
+        stroke(color[0], color[1], color[2], max(0, currentAlpha * 0.6));
+        strokeWeight(2);
+        beginShape();
+        noFill();
+        for (let x = 0; x <= width; x += 15) {
+          let y = wave.yOffset + 20;
+          y +=
+            sin(x * wave.frequency + wave.phase + PI) * (wave.amplitude * 0.7);
+          y += sin(x * 0.008 + elapsedTime * this.shimmerSpeed * 0.8) * 8;
+          vertex(x, y);
+        }
+        endShape();
+      }
+    }
+
+    // Add particle effects for extra magic
+    if (this.isHovered) {
+      this.drawAuroraParticles(elapsedTime);
+    }
+
+    pop();
+  }
+
+  // Draw floating particles for magical aurora effect
+  drawAuroraParticles(elapsedTime) {
+    const colors =
+      this.data.visualProperties?.colors || this.defaultAuroraColors;
+
+    push();
+    for (let i = 0; i < 12; i++) {
+      const x = noise(elapsedTime * 0.3 + i * 0.1) * width;
+      const y =
+        this.baseY + noise(elapsedTime * 0.2 + i * 0.15) * this.waveHeight;
+
+      const colorIndex = i % colors.length;
+      const color = colors[colorIndex];
+      const particleAlpha = 100 + sin(elapsedTime * 3 + i) * 50;
+
+      if (Array.isArray(color) && color.length >= 3) {
+        fill(color[0], color[1], color[2], max(0, particleAlpha));
+      } else {
+        fill(0, 255, 100, max(0, particleAlpha));
+      }
+      noStroke();
+
+      const size = 2 + sin(elapsedTime * 2 + i) * 1;
+      ellipse(x, y, size);
+    }
     pop();
   }
 
@@ -2309,6 +2740,17 @@ function draw() {
     activeRainbows[i].display();
     if (!activeRainbows[i].alive) {
       activeRainbows.splice(i, 1);
+    }
+  }
+
+  // Update and display active auroras
+  for (let i = activeAuroras.length - 1; i >= 0; i--) {
+    activeAuroras[i].update();
+    // Update hover state for mouse interaction
+    activeAuroras[i].updateHover(mouseX, mouseY);
+    activeAuroras[i].display();
+    if (!activeAuroras[i].alive) {
+      activeAuroras.splice(i, 1);
     }
   }
 

@@ -25,7 +25,7 @@ The structure must be:
     "soundscapeName": "string (name for the soundscape, e.g., 'Celestial Chimes')",
     "baseFrequency": "Number between 100 and 400 (Hz, can be float, fundamental frequency)",
     "harmonicityRatio": "Number between 1.0 (pure) and 3.0 (complex/dissonant, can be float, richness of harmonics)",
-    "oscillatorType": "string, one of: 'sine', 'triangle', 'sawtooth', 'pulse'",
+    "oscillatorType": "string, one of: 'sine', 'triangle', 'sawtooth', 'square'",
     "durationSeconds": "Integer between 10 and 60 (how long the rainbow and sound persist)",
     "reverbMix": "Number between 0.1 (subtle) and 0.8 (spacious, can be float, amount of reverb)"
   }
@@ -218,7 +218,7 @@ function validateRainbowData(rainbowData) {
     "sine",
     "triangle",
     "sawtooth",
-    "pulse",
+    "square",
   ]);
   check(
     "soundProperties.durationSeconds",

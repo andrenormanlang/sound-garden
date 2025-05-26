@@ -4,6 +4,7 @@ import { dirname, join } from "path";
 import { generatePlant } from "./services/aiPlantGenerator.js";
 import { generateWeather } from "./services/aiWeatherGenerator.js";
 import { generateRainbow } from "./services/aiRainbowGenerator.js"; // Added import
+import { generateAurora } from "./services/aiAuroraGenerator.js"; // Added aurora import
 
 // Determine directory name for both ESM and CJS contexts (Netlify functions)
 let __dirname;
@@ -164,6 +165,44 @@ app.post("/api/generate-rainbow", async (req, res) => {
     console.error("Error in /api/generate-rainbow endpoint:", error);
     res.status(500).json({
       error: "Failed to generate rainbow",
+      details: error.message,
+    });
+  }
+});
+
+// API endpoint for generating psychedelic aurora borealis
+app.post("/api/generate-aurora", async (req, res) => {
+  try {
+    console.log("[/api/generate-aurora] Request received");
+    const maskedKey = process.env.GEMINI_API_KEY
+      ? `${process.env.GEMINI_API_KEY.slice(
+          0,
+          4
+        )}...${process.env.GEMINI_API_KEY.slice(-4)}`
+      : "undefined";
+    console.log("[/api/generate-aurora] GEMINI_API_KEY:", maskedKey);
+
+    // Check rate limit
+    if (!checkRateLimit()) {
+      return res.status(429).json({
+        error: "Too many requests. Please try again later.",
+        retryAfter: Math.ceil(
+          (RATE_LIMIT_WINDOW -
+            (requestLog.length > 0
+              ? requestLog[0]
+              : Date.now() - RATE_LIMIT_WINDOW) +
+            Date.now()) /
+            1000
+        ),
+      });
+    }
+
+    const auroraData = await generateAurora();
+    res.json(auroraData);
+  } catch (error) {
+    console.error("Error in /api/generate-aurora endpoint:", error);
+    res.status(500).json({
+      error: "Failed to generate aurora",
       details: error.message,
     });
   }
